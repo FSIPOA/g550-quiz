@@ -14,6 +14,7 @@
     --green:     #3aee6a;
     --green-dim: rgba(58,238,106,0.15);
     --amber:     #ffdd00;
+    --red:       #ff5a5a;
     --white:     #f0f4f8;
     --grey:      #c8d0da;
     --dim:       #7a8799;
@@ -73,10 +74,12 @@
   .sys-tile.soon { opacity: 0.35; cursor: default; }
   .sys-tile .sys-name { font-size: 12px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; color: var(--white); margin-bottom: 7px; }
   .sys-tile.soon .sys-name { color: var(--grey); }
-  .sys-tile .sys-meta { font-size: 10px; color: var(--dim); display: flex; justify-content: space-between; align-items: center; }
+  .sys-tile .sys-meta { font-size: 10px; color: var(--dim); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .sys-tile .sys-name, .sys-tile .sys-meta { pointer-events: none; }
   .sys-tile.live .sys-meta .q-count { color: var(--green); font-weight: bold; }
   .soon-badge { font-size: 9px; letter-spacing: 0.1em; color: var(--dim); text-transform: uppercase; }
+  .sys-complete-badge { font-size: 9px; letter-spacing: 0.06em; color: var(--amber); border: 1px solid var(--amber); border-radius: 10px; padding: 1px 7px; }
+  .sys-complete-badge.done { color: var(--green); border-color: var(--green); }
   .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 7px; vertical-align: middle; box-shadow: 0 0 6px var(--green); }
 
   #quiz-screen { display: none; flex: 1; flex-direction: column; }
@@ -158,9 +161,62 @@
   #standby-rudder-fc-screen .stage { position: relative; width: 100%; max-width: 720px; }
   #standby-rudder-fc-screen .stage svg { display: block; width: 100%; height: auto; }
   #standby-rudder-fc-screen .status-line { margin-top: 14px; font-size: 13px; color: #9aa0a8; min-height: 18px; text-align: center; }
-  .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  /* Sequential Review header, finalized round (v5): back-btn and mini-bar-track are the
+     only two fixed grid tracks (auto / 1fr / auto). Title and sub-count live inside
+     .quiz-header-center using justify-content: space-evenly, which — with exactly two
+     children — produces three EQUAL gaps: Home<->Title, Title<->SubCount, SubCount<->Bar,
+     regardless of title length. Verified equal to the pixel in headless-browser testing
+     on both the shortest (APU) and longest (Pneumatics / Air Cond / Press) system names,
+     and on the real iPad mini landscape viewport (1133x744). */
+  .quiz-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .quiz-header-center {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    min-width: 0;
+    height: 100%;
+  }
   .quiz-title { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--white); font-weight: bold; }
-  .quiz-progress { font-size: 12px; color: var(--amber); letter-spacing: 0.08em; }
+  .quiz-title.with-system {
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .quiz-title .quiz-title-sys { color: var(--green); }
+  .sub-count {
+    font-size: 11px; color: var(--dim); letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sub-count b { color: var(--grey); }
+
+  /* Mini total-progress bar — only shown during Sequential Review (hidden for
+     per-system quiz mode, where the sub-count text already covers "Q x of y"). */
+  .mini-bar-track {
+    position: relative;
+    width: clamp(80px, 6vw, 130px); height: 24px; border-radius: 24px; border: 1px solid var(--border);
+    overflow: hidden; background: var(--panel);
+  }
+  .mini-bar-fill {
+    position: absolute; inset: 0; border-radius: 24px;
+    background: linear-gradient(90deg, var(--red) 0%, var(--amber) 50%, var(--green) 100%);
+  }
+  .mini-bar-cover { position: absolute; top: 0; bottom: 0; right: 0; background: var(--panel); }
+  .mini-bar-text {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase;
+    white-space: nowrap; pointer-events: none;
+  }
+  .mini-bar-text.dark { color: #14171b; }
+  .mini-bar-text.light { color: var(--white); }
   .back-btn {
     background: none; border: 1px solid var(--border-hi); color: var(--grey);
     font-family: var(--font-mono); font-size: 11px; padding: 6px 14px; cursor: pointer;
@@ -201,9 +257,9 @@
   .feedback-box.explain  { border: 1px solid var(--border-hi); color: var(--grey); background: var(--panel-hi); }
 
   .syn-instruction { display: none; padding: 10px 14px; border: 1px solid var(--border-hi); border-radius: 4px; background: var(--panel-hi); color: var(--white); font-size: 13px; line-height: 1.6; flex-shrink: 0; }
-  .syn-spacer { flex-shrink: 0; }
+  .syn-spacer { flex-shrink: 0; height: 14px; }
 
-  .nav-row { display: flex; justify-content: flex-end; gap: 10px; }
+  .nav-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; }
   .nav-btn {
     background: var(--green-dim); border: 1px solid var(--green); color: var(--green);
     font-family: var(--font-mono); font-size: 12px; padding: 10px 24px; cursor: pointer;
@@ -258,6 +314,26 @@
     border-radius: 3px; letter-spacing: 0.1em; text-transform: uppercase; transition: background 0.12s;
   }
   .results-actions button:hover { background: rgba(58,238,106,0.22); }
+
+  /* Constrained-height screens (e.g. iPad mini landscape, ~744px tall) — the
+     longest-content questions (long question text + long answer options +
+     a synoptic hint) can genuinely need more room than a short viewport
+     has. Rather than let that overflow, tighten spacing and type size a
+     notch here so the full question always fits without scrolling. Text
+     stays comfortably legible; this only kicks in below the height where
+     it's actually needed. Placed at the end of the stylesheet deliberately —
+     CSS resolves equal-specificity rules by source order, so this must come
+     after every base rule it's meant to override, or the base rule wins
+     regardless of the media condition. */
+  @media (max-height: 800px) {
+    .q-left { gap: 7px; }
+    .q-text { padding: 11px 15px; font-size: 13px; line-height: 1.6; }
+    .options { gap: 5px; }
+    .option-btn { padding: 9px 14px; font-size: 12px; line-height: 1.4; }
+    .syn-instruction { padding: 7px 12px; font-size: 12px; line-height: 1.4; }
+    .feedback-box { padding: 8px 14px; font-size: 12px; line-height: 1.4; }
+    .syn-spacer { height: 8px; }
+  }
 </style>
 </head>
 <body>
@@ -266,6 +342,17 @@
   <div class="rotate-icon">&#8635;</div>
   <div class="rotate-label">Rotate your device</div>
   <p>This app is designed for<br>landscape orientation.</p>
+</div>
+
+<div id="resume-prompt" style="display:none; position:fixed; inset:0; background:rgba(10,12,14,0.82); z-index:998; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--panel-hi); border:1px solid var(--border-hi); border-radius:6px; padding:32px 36px; max-width:440px; width:100%; text-align:center;">
+    <div id="resume-title" style="font-size:17px; color:var(--white); margin-bottom:12px; font-weight:bold; letter-spacing:0.03em;"></div>
+    <div id="resume-body" style="font-size:13px; color:var(--grey); line-height:1.7; margin-bottom:26px;"></div>
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <button id="resume-restart-btn" class="nav-btn" style="display:block; border-color:var(--border-hi); color:var(--grey); background:none;"></button>
+      <button id="resume-continue-btn" class="nav-btn" style="display:block; background:var(--green-dim); border-color:var(--green); color:var(--green);"></button>
+    </div>
+  </div>
 </div>
 
 <div id="app">
@@ -285,7 +372,7 @@
     <button class="entry-btn secondary" onclick="startSequential()">
       <div class="btn-label">&#9654; Sequential Review</div>
       <div class="btn-desc">Work through all questions in ground school order, system by system. Best for initial study or a full pre-check refresher.</div>
-      <div class="btn-count">333 questions &middot; ground school sequence</div>
+      <div class="btn-count" id="sequential-count">ground school sequence</div>
     </button>
   </div>
   <div class="section-label">Study by System &mdash; select a system to drill all its questions</div>
@@ -295,8 +382,16 @@
 <div id="quiz-screen">
   <div class="quiz-header">
     <button class="back-btn" onclick="goHome()">&#8592; Home</button>
-    <div class="quiz-title" id="quiz-title">Hydraulics</div>
-    <div class="quiz-progress" id="quiz-progress">Q 1 of 17</div>
+    <div class="quiz-header-center">
+      <div class="quiz-title" id="quiz-title">Hydraulics</div>
+      <div class="sub-count" id="quiz-progress">Q 1 of 17</div>
+    </div>
+    <div class="mini-bar-track" id="mini-bar-track" style="display:none;">
+      <div class="mini-bar-fill"></div>
+      <div class="mini-bar-cover" id="mini-bar-cover" style="left:100%;"></div>
+      <div class="mini-bar-text dark" id="mini-bar-text-dark" style="clip-path: inset(0 100% 0 0);">Total</div>
+      <div class="mini-bar-text light" id="mini-bar-text-light" style="clip-path: inset(0 0 0 100%);">Total</div>
+    </div>
   </div>
   <div class="question-card">
     <div class="q-left">
@@ -306,9 +401,9 @@
       </div>
       <div class="options" id="options-container"></div>
       <div class="answer-illustration" id="answer-illustration" style="display:none;"></div>
-      <div class="syn-spacer" id="syn-spacer-1" style="flex:1;"></div>
+      <div class="syn-spacer" id="syn-spacer-1"></div>
       <div class="syn-instruction" id="syn-instruction"></div>
-      <div class="syn-spacer" id="syn-spacer-2" style="flex:2;"></div>
+      <div class="syn-spacer" id="syn-spacer-2"></div>
       <div class="feedback-box" id="feedback-box"></div>
       <div class="nav-row">
         <button class="nav-btn" id="prev-btn" onclick="prevQuestion()">&#8592; Previous</button>
@@ -2315,37 +2410,201 @@ const QUESTIONS = { hydraulics: [
 // STATE
 let currentQuiz=[], currentIndex=0, answers=[], currentSystem="";
 let attemptCount=0, wrongThisQuestion=[];
+let quizMode="system"; // "system" | "sequential" | "full"
+
+// Master ground-school-order question list for Sequential Review, each question
+// tagged with which system it belongs to (_sys) so the question card, results
+// screen, and progress tracking can all resolve the right system regardless
+// of quiz mode.
+const SEQUENTIAL_QUESTIONS = (() => {
+  const list = [];
+  SYSTEMS.forEach(sys => {
+    if (sys.isMenu) return;
+    const qs = QUESTIONS[sys.id] || [];
+    qs.forEach(q => list.push(Object.assign({}, q, { _sys: sys.id })));
+  });
+  return list;
+})();
+
+// ==================== PROGRESS PERSISTENCE ====================
+// Stored locally (no server, works fully offline). Tracks, per question id,
+// whether it's been resolved (answered correctly, or reached 3 wrong
+// attempts) during a Sequential Review pass, plus a rolling attempt history
+// for future topic-mastery scoring.
+const PROGRESS_KEY = "g550_progress_v1";
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && typeof parsed === "object" && parsed.perQuestion) return parsed;
+  } catch (e) {}
+  return { version: 1, perQuestion: {} };
+}
+
+function saveProgress(progress) {
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch (e) {}
+}
+
+function markResolvedInSequential(qid) {
+  const progress = loadProgress();
+  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false };
+  progress.perQuestion[qid].resolvedInSequential = true;
+  saveProgress(progress);
+}
+
+function recordAttempt(qid, isCorrect) {
+  const progress = loadProgress();
+  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false };
+  progress.perQuestion[qid].attempts.push({ correct: isCorrect, ts: Date.now() });
+  if (progress.perQuestion[qid].attempts.length > 5) progress.perQuestion[qid].attempts.shift();
+  saveProgress(progress);
+}
+
+// Index of the first not-yet-resolved question in ground-school order —
+// this is the actual "resume point" logic: skip everything already
+// resolved in a prior Sequential Review pass, land on the first one that
+// isn't.
+function getSequentialResumeIndex() {
+  const progress = loadProgress();
+  for (let i = 0; i < SEQUENTIAL_QUESTIONS.length; i++) {
+    const rec = progress.perQuestion[SEQUENTIAL_QUESTIONS[i].id];
+    if (!rec || !rec.resolvedInSequential) return i;
+  }
+  return SEQUENTIAL_QUESTIONS.length;
+}
+
+// How much of the Sequential Review has been resolved, overall and per
+// system. Based on the same resolvedInSequential flags used for the resume
+// prompt — this is completion, not mastery (mastery/rolling-window scoring
+// is a separate, not-yet-built feature that needs the topic-group tier).
+function getOverallCompletion() {
+  const progress = loadProgress();
+  let resolved = 0;
+  SEQUENTIAL_QUESTIONS.forEach(q => {
+    const rec = progress.perQuestion[q.id];
+    if (rec && rec.resolvedInSequential) resolved++;
+  });
+  const total = SEQUENTIAL_QUESTIONS.length;
+  return { resolved, total, pct: total ? Math.round((resolved / total) * 100) : 0 };
+}
+
+// Position of the question at `index` within its own system's block of
+// SEQUENTIAL_QUESTIONS (e.g. "14 of 33"), for the header sub-count during
+// Sequential Review. Counts matches by _sys rather than assuming a
+// contiguous block, so it stays correct even if ground-school order is
+// ever re-sorted.
+function getSystemPositionInSequential(index) {
+  const sysId = SEQUENTIAL_QUESTIONS[index]._sys;
+  let total = 0, position = 0;
+  for (let i = 0; i < SEQUENTIAL_QUESTIONS.length; i++) {
+    if (SEQUENTIAL_QUESTIONS[i]._sys === sysId) {
+      total++;
+      if (i <= index) position++;
+    }
+  }
+  return { position, total };
+}
+
+// Drives the mini total-progress bar in the header: cover position and the
+// dark/light text clip-paths all move together off one pct value (0-100).
+function updateMiniBar(pct) {
+  document.getElementById("mini-bar-cover").style.left = pct + "%";
+  document.getElementById("mini-bar-text-dark").style.clipPath = "inset(0 " + (100 - pct) + "% 0 0)";
+  document.getElementById("mini-bar-text-light").style.clipPath = "inset(0 0 0 " + pct + "%)";
+}
+
+function getSystemCompletion(sysId) {
+  const progress = loadProgress();
+  let resolved = 0, total = 0;
+  SEQUENTIAL_QUESTIONS.forEach(q => {
+    if (q._sys !== sysId) return;
+    total++;
+    const rec = progress.perQuestion[q.id];
+    if (rec && rec.resolvedInSequential) resolved++;
+  });
+  return { resolved, total, pct: total ? Math.round((resolved / total) * 100) : 0 };
+}
+
+function exportProgress() {
+  const progress = loadProgress();
+  const blob = new Blob([JSON.stringify(progress, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "g550_quiz_progress.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importProgressFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (parsed && typeof parsed === "object" && parsed.perQuestion) {
+        saveProgress(parsed);
+        alert("Progress loaded from file.");
+      } else {
+        alert("That file doesn't look like a progress export.");
+      }
+    } catch (err) {
+      alert("Could not read that file — is it a valid progress export?");
+    }
+  };
+  reader.readAsText(file);
+}
 
 function buildHomeScreen() {
+  const overall = getOverallCompletion();
+  const seqCountEl = document.getElementById("sequential-count");
+  if (seqCountEl) {
+    seqCountEl.textContent = SEQUENTIAL_QUESTIONS.length + " questions \u00B7 ground school sequence" +
+      (overall.resolved > 0 ? " \u00B7 " + overall.pct + "% complete" : "");
+  }
+
   const grid = document.getElementById("system-grid");
   grid.innerHTML = "";
   SYSTEMS.forEach(sys => {
     const tile = document.createElement("div");
     tile.className = "sys-tile " + (sys.live ? "live" : "soon");
     const metaLabel = sys.isMenu ? (sys.count + " available") : (sys.count + " questions");
+    const completion = (sys.live && !sys.isMenu) ? getSystemCompletion(sys.id) : null;
+    const completionBadge = (completion && completion.resolved > 0)
+      ? "<span class=\"sys-complete-badge" + (completion.pct === 100 ? " done" : "") + "\">" + completion.pct + "%</span>"
+      : "";
     tile.innerHTML =
       "<div class=\"sys-name\">" + (sys.live ? "<span class=\"live-dot\"></span>" : "") + sys.name + "</div>" +
       "<div class=\"sys-meta\">" +
         "<span class=\"" + (sys.live ? "q-count" : "") + "\">" + metaLabel + "</span>" +
+        completionBadge +
         (sys.live ? "" : "<span class=\"soon-badge\">Coming Soon</span>") +
       "</div>";
     if (sys.live) tile.dataset.sysId = sys.id;
     if (sys.isMenu) tile.style.gridColumn = "2"; // center it in the last, otherwise-lonely row
     grid.appendChild(tile);
   });
-  // Event delegation — one listener on the grid, fired for any live tile click
-  grid.addEventListener("click", function(e) {
-    const tile = e.target.closest(".sys-tile.live");
-    if (tile && tile.dataset.sysId) {
-      const sys = SYSTEMS.find(s => s.id === tile.dataset.sysId);
-      if (sys && sys.isMenu) {
-        showScreen("functional-checks-screen");
-      } else {
-        console.log("Tile clicked via delegation:", tile.dataset.sysId);
-        startSystemQuiz(tile.dataset.sysId);
+  // Event delegation — one listener on the grid, fired for any live tile click.
+  // buildHomeScreen() now re-runs every time the user returns home (so progress
+  // badges stay current), so guard against attaching this more than once.
+  if (!grid.dataset.listenerAttached) {
+    grid.dataset.listenerAttached = "1";
+    grid.addEventListener("click", function(e) {
+      const tile = e.target.closest(".sys-tile.live");
+      if (tile && tile.dataset.sysId) {
+        const sys = SYSTEMS.find(s => s.id === tile.dataset.sysId);
+        if (sys && sys.isMenu) {
+          showScreen("functional-checks-screen");
+        } else {
+          console.log("Tile clicked via delegation:", tile.dataset.sysId);
+          startSystemQuiz(tile.dataset.sysId);
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 function buildFunctionalChecksScreen() {
@@ -2384,6 +2643,7 @@ function startSystemQuiz(sysId) {
   const sys = SYSTEMS.find(s => s.id === sysId);
   if (!sys || !sys.live) return;
   currentSystem = sysId;
+  quizMode = "system";
 
   // Deep copy and shuffle question order
   let questions = JSON.parse(JSON.stringify(QUESTIONS[sysId] || []));
@@ -2396,32 +2656,116 @@ function startSystemQuiz(sysId) {
     // shuffleArray(indices); // DISABLED — re-enable when project complete
     const newOptions = indices.map(i => q.options[i]);
     const newCorrect = indices.indexOf(q.correct);
-    return Object.assign({}, q, {options: newOptions, correct: newCorrect});
+    return Object.assign({}, q, {options: newOptions, correct: newCorrect, _sys: sysId});
   });
 
   currentQuiz = questions;
   currentIndex = 0; answers = [];
-  document.getElementById("quiz-title").textContent = sys.name;
+  const titleEl = document.getElementById("quiz-title");
+  titleEl.classList.remove("with-system");
+  titleEl.textContent = sys.name;
   showScreen("quiz-screen");
   renderQuestion();
 }
 
 function startFullQuiz()   { alert("Full Quiz coming soon! Select Hydraulics to try the live system."); }
-function startSequential() { alert("Sequential mode coming soon! Select Hydraulics to try the live system."); }
+
+function startSequential() {
+  const resumeIndex = getSequentialResumeIndex();
+  if (resumeIndex >= SEQUENTIAL_QUESTIONS.length) {
+    showResumePrompt(resumeIndex, true);
+  } else if (resumeIndex <= 0) {
+    beginSequentialAt(0);
+  } else {
+    showResumePrompt(resumeIndex, false);
+  }
+}
+
+function showResumePrompt(resumeIndex, isComplete) {
+  const titleEl   = document.getElementById("resume-title");
+  const bodyEl    = document.getElementById("resume-body");
+  const continueBtn = document.getElementById("resume-continue-btn");
+  const restartBtn  = document.getElementById("resume-restart-btn");
+
+  if (isComplete) {
+    titleEl.textContent = "Review complete!";
+    bodyEl.textContent = "You've been through all " + SEQUENTIAL_QUESTIONS.length + " questions in the Sequential Review. Start over from the beginning?";
+    continueBtn.style.display = "none";
+    restartBtn.textContent = "Start Over";
+  } else {
+    titleEl.textContent = "Welcome back!";
+    bodyEl.textContent = "You left off at Question " + (resumeIndex + 1) + " of " + SEQUENTIAL_QUESTIONS.length + " in the Sequential Review.";
+    continueBtn.style.display = "block";
+    continueBtn.textContent = "Resume at Q" + (resumeIndex + 1);
+    restartBtn.textContent = "Start Over";
+  }
+
+  continueBtn.onclick = () => {
+    document.getElementById("resume-prompt").style.display = "none";
+    beginSequentialAt(resumeIndex);
+  };
+  restartBtn.onclick = () => {
+    document.getElementById("resume-prompt").style.display = "none";
+    beginSequentialAt(0);
+  };
+
+  document.getElementById("resume-prompt").style.display = "flex";
+}
+
+function beginSequentialAt(index) {
+  quizMode = "sequential";
+  currentSystem = "";
+  currentQuiz = SEQUENTIAL_QUESTIONS;
+  currentIndex = index;
+  answers = [];
+  document.getElementById("quiz-title").textContent = "Sequential Review";
+  showScreen("quiz-screen");
+  renderQuestion();
+}
+
+// Prominent per-system title, folded into the existing header row rather
+// than a separate banner — costs no extra vertical space since the header's
+// height is already governed by the Home button's padding, not the title
+// text's own line height (verified: bumping the title font size doesn't
+// change the header's rendered height at all). Only used during Sequential
+// Review — a per-system drill already shows its system as the plain title.
+function updateSystemTitle(q, sysName) {
+  const titleEl = document.getElementById("quiz-title");
+  if (!titleEl) return;
+  if (quizMode === "sequential" && q && q._sys) {
+    titleEl.classList.add("with-system");
+    titleEl.innerHTML = "Sequential Review \u2014 <span class=\"quiz-title-sys\">" + sysName + "</span>";
+  } else {
+    titleEl.classList.remove("with-system");
+  }
+}
 
 function renderQuestion() {
   const q = currentQuiz[currentIndex];
   const total = currentQuiz.length;
-  const sysName = SYSTEMS.find(s => s.id === currentSystem)?.name || "";
+  const sysName = SYSTEMS.find(s => s.id === (q._sys || currentSystem))?.name || "";
 
   attemptCount = 0;
   wrongThisQuestion = [];
 
 
 
-  document.getElementById("quiz-progress").textContent = "Q " + (currentIndex+1) + " of " + total;
+  const progressEl = document.getElementById("quiz-progress");
+  const barEl = document.getElementById("mini-bar-track");
+  if (quizMode === "sequential") {
+    const sysPos = getSystemPositionInSequential(currentIndex);
+    progressEl.innerHTML = "Question <b>" + sysPos.position + "</b> of <b>" + sysPos.total + "</b> in this system";
+    const overall = getOverallCompletion();
+    updateMiniBar(overall.pct);
+    barEl.style.display = "";
+  } else {
+    progressEl.textContent = "Q " + (currentIndex+1) + " of " + total;
+    barEl.style.display = "none";
+  }
   document.getElementById("q-number").textContent = "Question " + (currentIndex+1) + " of " + total + " \u00B7 " + sysName;
   document.getElementById("q-text").textContent = q.text;
+
+  updateSystemTitle(q, sysName);
 
   const letters = ["A","B","C","D"];
   const container = document.getElementById("options-container");
@@ -2464,28 +2808,51 @@ function renderQuestion() {
     if (q.answerIllustration) {
       illus.innerHTML = q.answerIllustration;
       illus.style.display = "flex";
-      // These spacers exist for the synoptic-toggle layout; when the CSS
-      // flex-grow was left on them alongside a flex-grow illustration they
-      // refused to collapse to 0 even with no room left (a flexbox edge
-      // case), causing real overflow. Neutralize them and size the
-      // illustration directly in JS instead — deterministic, no flex quirks.
-      if (spacer1) spacer1.style.flex = "0 0 0px";
-      if (spacer2) spacer2.style.flex = "0 0 0px";
+      // These spacers exist for the synoptic+instruction layout and have
+      // nothing to do with a standalone illustration — remove them from
+      // flow entirely rather than sizing them, so fitAnswerIllustration()'s
+      // "sum of visible siblings" measurement isn't padded by them.
+      if (spacer1) spacer1.style.display = "none";
+      if (spacer2) spacer2.style.display = "none";
       fitAnswerIllustration();
     } else {
       illus.innerHTML = "";
       illus.style.display = "none";
       illus.style.height = "";
-      if (spacer1) spacer1.style.flex = "1";
-      if (spacer2) spacer2.style.flex = "2";
+      if (spacer1) spacer1.style.display = "";
+      if (spacer2) spacer2.style.display = "";
     }
   }
+
+  fitQuestionCard();
 }
 
 // Sizes the standalone answer illustration to exactly fill whatever vertical
 // room is left between it and the bottom of the viewport, based on the
 // other (currently visible) content in .q-left — so it scales with the
 // real screen size and shrinks automatically when the feedback box appears.
+// Sizes the split-column question-card (question+options on the left,
+// synoptic on the right) to the real available viewport height. Without
+// this, align-items:stretch lets both columns match whatever height the
+// ancestor chain happens to compute — and since nothing above it is a true
+// ceiling (min-height:100vh is a floor, not a cap), that computed height
+// can end up taller than the actual screen on shorter devices, and
+// nav-row's margin-top:auto then pushes Previous/Next off the bottom of
+// the visible page. Anchoring to window.innerHeight directly (the one
+// number that's always reliable) fixes it at the source, the same way
+// fitAnswerIllustration() does for the standalone-illustration layout.
+function fitQuestionCard() {
+  const card = document.querySelector(".question-card");
+  if (!card || card.offsetParent === null) return;
+
+  const cardTop = card.getBoundingClientRect().top;
+  const bottomMargin = 24; // main's own bottom padding, plus a little breathing room
+  const available = window.innerHeight - cardTop - bottomMargin;
+  card.style.maxHeight = Math.max(200, Math.floor(available)) + "px";
+}
+
+window.addEventListener("resize", fitQuestionCard);
+
 function fitAnswerIllustration() {
   const illus = document.getElementById("answer-illustration");
   const qLeft = document.querySelector(".q-left");
@@ -2744,7 +3111,11 @@ function selectAnswer(chosen) {
     showSynoptic(q);
     // Enable toggle buttons if this is a toggle question
     document.querySelectorAll(".toggle-btn").forEach(btn => { btn.disabled = false; });
-    answers.push({ qId: q.id, system: currentSystem, isCorrect: true, attempts: attemptCount });
+    answers.push({ qId: q.id, system: q._sys || currentSystem, isCorrect: true, attempts: attemptCount });
+    if (quizMode === "sequential") {
+      recordAttempt(q.id, true);
+      markResolvedInSequential(q.id);
+    }
 
     const isLast = currentIndex === currentQuiz.length - 1;
     document.getElementById("next-btn").style.display    = isLast ? "none"  : "block";
@@ -2757,6 +3128,7 @@ function selectAnswer(chosen) {
     btns[chosen].classList.add("wrong");
     btns[chosen].disabled = true;
     btns[chosen].classList.add("eliminated");
+    if (quizMode === "sequential") recordAttempt(q.id, false);
 
     if (attemptCount >= 3) {
       // THIRD WRONG — lock everything, reveal synoptic (if any), show correct answer + explanation
@@ -2770,7 +3142,8 @@ function selectAnswer(chosen) {
       fb.className = "feedback-box explain";
       fb.textContent = "\u2717 The correct answer is " + ["A","B","C","D"][q.correct] + ". " + (q.explain || "");
 
-      answers.push({ qId: q.id, system: currentSystem, isCorrect: false, attempts: attemptCount });
+      answers.push({ qId: q.id, system: q._sys || currentSystem, isCorrect: false, attempts: attemptCount });
+      if (quizMode === "sequential") markResolvedInSequential(q.id);
 
       const isLast = currentIndex === currentQuiz.length - 1;
       document.getElementById("next-btn").style.display    = isLast ? "none"  : "block";
@@ -2796,6 +3169,8 @@ function selectAnswer(chosen) {
   }
 
   fitAnswerIllustration();
+  fitQuestionCard();
+  updateSystemTitle(q, SYSTEMS.find(s => s.id === (q._sys || currentSystem))?.name || "");
 }
 
 function prevQuestion() {
@@ -2807,10 +3182,11 @@ function showResults() {
   const total   = answers.length;
   const correct = answers.filter(a => a.isCorrect).length;
   const pct     = Math.round((correct / total) * 100);
+  const resultsLabel = quizMode === "sequential" ? "Sequential Review" : (SYSTEMS.find(s=>s.id===currentSystem)?.name || "");
 
   document.getElementById("overall-score").textContent = pct + "%";
   document.getElementById("overall-label").textContent =
-    correct + " of " + total + " correct \u00B7 " + (SYSTEMS.find(s=>s.id===currentSystem)?.name || "");
+    correct + " of " + total + " correct \u00B7 " + resultsLabel;
 
   const grid = document.getElementById("sys-results-grid");
   grid.innerHTML = "";
@@ -2819,7 +3195,7 @@ function showResults() {
   const scoreTile = document.createElement("div");
   scoreTile.className = "sys-result-tile";
   scoreTile.innerHTML =
-    "<div class=\"sr-name\">" + (SYSTEMS.find(s=>s.id===currentSystem)?.name||"") + "</div>" +
+    "<div class=\"sr-name\">" + resultsLabel + "</div>" +
     "<div class=\"sr-score " + (pct<70?"weak":"") + "\">" + pct + "%</div>" +
     "<div class=\"sr-detail\">" + correct + " / " + total + " correct</div>";
   grid.appendChild(scoreTile);
@@ -2862,8 +3238,11 @@ function showResults() {
   showScreen("results-screen");
 }
 
-function retryQuiz() { startSystemQuiz(currentSystem); }
-function goHome()     { showScreen("home-screen"); }
+function retryQuiz() {
+  if (quizMode === "sequential") { startSequential(); }
+  else { startSystemQuiz(currentSystem); }
+}
+function goHome()     { buildHomeScreen(); showScreen("home-screen"); }
 
 function showScreen(id) {
   document.getElementById("home-screen").style.display    = id === "home-screen"    ? "block" : "none";
