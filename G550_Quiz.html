@@ -249,6 +249,11 @@
   .option-btn.wrong { border-color: var(--amber); background: rgba(255,221,0,0.12); color: var(--white); }
   .option-btn.wrong .opt-letter { color: var(--amber); }
   .option-btn.eliminated { opacity: 0.25; cursor: default; border-color: var(--border); }
+  /* Full Quiz incorrect pick — neutral marker only, no red. The point of
+     fully-blind scoring is that a miss reveals nothing about which answer
+     was right, so this just confirms the pick registered. */
+  .option-btn.picked-neutral { border-color: var(--grey); box-shadow: inset 0 0 0 1px var(--grey); }
+  .feedback-box.incorrect { border: 1px solid var(--red); color: var(--red); background: rgba(255,90,90,0.10); }
   .option-btn:disabled { cursor: default; }
 
   .feedback-box { border-radius: 4px; padding: 12px 16px; font-size: 13px; line-height: 1.6; display: none; letter-spacing: 0.03em; flex-shrink: 0; }
@@ -289,7 +294,7 @@
 
   .answer-illustration { width: 100%; margin: 8px auto 0; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
   .answer-illustration svg { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .syn-waiting { color: var(--dim); font-size: 11px; text-align: center; line-height: 2; font-style: italic; }
+  .syn-waiting { color: var(--white); font-size: 11px; text-align: center; line-height: 2; font-style: italic; padding: 0 20px; }
 
   #results-screen { display: none; }
   .results-header { text-align: center; padding: 32px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
@@ -314,6 +319,72 @@
     border-radius: 3px; letter-spacing: 0.1em; text-transform: uppercase; transition: background 0.12s;
   }
   .results-actions button:hover { background: rgba(58,238,106,0.22); }
+
+  /* ---- Full Quiz results: score banner + per-system breakdown ---- */
+  #full-results-block { max-width: 900px; margin: 0 auto; }
+  .score-banner {
+    background: var(--panel-hi); border: 1px solid var(--border-hi); border-radius: 6px;
+    padding: 24px 28px; display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 22px; gap: 20px;
+  }
+  .score-banner.pass { border-color: var(--green); }
+  .score-banner.fail { border-color: var(--red); }
+  .score-left { display: flex; flex-direction: column; gap: 6px; }
+  .score-pct { font-size: 42px; font-weight: bold; letter-spacing: 0.02em; line-height: 1; }
+  .score-pct.pass { color: var(--green); }
+  .score-pct.fail { color: var(--red); }
+  .score-detail { font-size: 12px; color: var(--dim); letter-spacing: 0.04em; }
+  .score-badge {
+    font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 8px 18px; border-radius: 4px; white-space: nowrap;
+  }
+  .score-badge.pass { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .score-badge.fail { background: rgba(255,90,90,0.12); color: var(--red); border: 1px solid var(--red); }
+  .score-threshold { font-size: 11px; color: var(--dim); text-align: right; }
+  .breakdown-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+  .system-row {
+    display: grid; grid-template-columns: 1fr minmax(120px, 240px) 90px;
+    align-items: center; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .system-row:last-child { border-bottom: none; }
+  .system-row-name { font-size: 13px; }
+  .system-row-count { font-size: 12px; color: var(--dim); white-space: nowrap; text-align: right; }
+  .system-row-count b { color: var(--grey); }
+  .system-bar-track { position: relative; height: 8px; border-radius: 4px; background: var(--panel); border: 1px solid var(--border); overflow: hidden; }
+  .system-bar-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; }
+  .system-bar-fill.good { background: var(--green); }
+  .system-bar-fill.mid  { background: var(--amber); }
+  .system-bar-fill.weak { background: var(--red); }
+  .review-btn {
+    display: block; width: 100%; margin-top: 22px;
+    background: none; border: 1px solid var(--border-hi); color: var(--white);
+    font-family: var(--font-mono); font-size: 13px; padding: 14px; cursor: pointer;
+    border-radius: 4px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  /* ---- Review Missed Questions screen ---- */
+  #review-missed-screen { display: none; }
+  #review-missed-screen.active { display: flex; flex-direction: column; }
+  .original-answer-note {
+    font-size: 11px; color: var(--dim); letter-spacing: 0.02em; line-height: 1.6;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 9px 14px;
+  }
+  .original-answer-note b { color: var(--red); font-weight: bold; }
+  .option-btn.was-original-wrong { box-shadow: inset 0 0 0 1px var(--red); }
+  .option-btn.correct-answer-reveal { border-color: var(--green); background: var(--green-dim); }
+  .option-btn.correct-answer-reveal .opt-letter { color: var(--green); }
+  .picked-tag { margin-left: auto; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); white-space: nowrap; align-self: center; }
+  .picked-tag.wrong-tag { color: var(--red); }
+  .picked-tag.correct-tag { color: var(--green); }
+  .feedback-box.retry-win {
+    background: linear-gradient(135deg, var(--green-dim), rgba(255,221,0,0.14));
+    border: 1.5px solid var(--green); color: var(--green); font-size: 15px; padding: 14px 18px;
+  }
+  .explanation-box {
+    background: var(--panel); border: 1px solid var(--border-hi); border-radius: 4px;
+    padding: 14px 16px; font-size: 12px; color: var(--grey); line-height: 1.7;
+  }
+  .explanation-box .ref { color: var(--dim); font-style: italic; margin-top: 8px; display: block; }
 
   /* Constrained-height screens (e.g. iPad mini landscape, ~744px tall) — the
      longest-content questions (long question text + long answer options +
@@ -367,7 +438,7 @@
     <button class="entry-btn primary" onclick="startFullQuiz()">
       <div class="btn-label">&#9654; Full Quiz</div>
       <div class="btn-desc">Randomly sampled questions from all systems, proportional to system size. Results show overall score plus a breakdown by system.</div>
-      <div class="btn-count">~50 questions &middot; all 15 systems</div>
+      <div class="btn-count" id="fullquiz-count">50 questions &middot; all 15 systems</div>
     </button>
     <button class="entry-btn secondary" onclick="startSequential()">
       <div class="btn-label">&#9654; Sequential Review</div>
@@ -667,14 +738,71 @@
 </div>
 
 <div id="results-screen">
-  <div class="results-header">
+  <div class="results-header" id="std-results-header">
     <div class="overall-score" id="overall-score">--</div>
     <div class="overall-label" id="overall-label">Overall Score</div>
   </div>
   <div class="sys-results" id="sys-results-grid"></div>
-  <div class="results-actions">
+
+  <!-- Full Quiz results — pass/fail banner + per-system breakdown, shown only
+       when quizMode === "full". Kept as a separate block rather than
+       reworking sys-results-grid, since system/sequential results (above)
+       are working and unrelated to this. -->
+  <div id="full-results-block" style="display:none;">
+    <div class="score-banner" id="fq-score-banner">
+      <div class="score-left">
+        <div class="score-pct" id="fq-score-pct">--</div>
+        <div class="score-detail" id="fq-score-detail"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+        <div class="score-badge" id="fq-score-badge"></div>
+        <div class="score-threshold">80% required to pass</div>
+      </div>
+    </div>
+    <div class="breakdown-label">Per-System Breakdown</div>
+    <div id="fq-system-breakdown"></div>
+    <button class="review-btn" id="fq-review-btn" onclick="startReviewMissed()" style="display:none;">Review Missed Questions</button>
+  </div>
+
+  <div class="results-actions" id="std-results-actions">
     <button onclick="goHome()">&#8592; Back to Home</button>
     <button onclick="retryQuiz()">Retry This Quiz</button>
+  </div>
+  <div class="results-actions" id="fq-results-actions" style="display:none;">
+    <button onclick="goHome()">&#8592; Back to Home</button>
+  </div>
+</div>
+
+<div id="review-missed-screen">
+  <div class="quiz-header">
+    <button class="back-btn" onclick="finishReview()">&#8592; Results</button>
+    <div class="quiz-header-center">
+      <div class="quiz-title with-system" id="review-title">Review Missed &mdash; <span class="quiz-title-sys" id="review-title-sys"></span></div>
+      <div class="sub-count" id="review-count"></div>
+    </div>
+    <div style="width:1px;"></div>
+  </div>
+  <div class="question-card">
+    <div class="q-left">
+      <div class="q-text">
+        <div class="q-number" id="review-q-number"></div>
+        <div id="review-q-text"></div>
+      </div>
+      <div class="original-answer-note" id="review-original-note"></div>
+      <div class="feedback-box" id="review-feedback-box"></div>
+      <div class="options" id="review-options-container"></div>
+      <div class="explanation-box" id="review-explanation-box" style="display:none;"></div>
+      <div class="nav-row">
+        <button class="nav-btn" id="review-next-btn" onclick="nextMissedQuestion()" style="display:none;">Next Missed Question &#8594;</button>
+        <button class="nav-btn" id="review-done-btn" onclick="finishReview()" style="display:none;">Done &#8212; Back to Results</button>
+      </div>
+    </div>
+    <div class="q-right">
+      <div class="synoptic-panel" id="review-synoptic-panel">
+        <div class="syn-toggle" id="review-syn-toggle"></div>
+        <div class="syn-content" id="review-syn-content"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2461,6 +2589,87 @@ function recordAttempt(qid, isCorrect) {
   saveProgress(progress);
 }
 
+// ==================== FULL QUIZ (50-QUESTION TEST) ====================
+// Per-system question counts for the 50-question test, modeled on six real
+// FlightSafety G450/550 initial written exams (see developer's notes for
+// the full mapping). Every system tile is always represented; sums to 50.
+const FULL_QUIZ_DISTRIBUTION = {
+  aircraft_general: 4, electrics: 4, lighting: 2, fuel: 2, engines: 3,
+  apu: 2, fire: 2, pneumatics: 8, anti_icing: 3, hydraulics: 2,
+  landing_gear: 4, flight_controls: 2, avionics: 8, oxygen: 2, performance: 2,
+};
+
+// Fairness usage counter — how many times a question has been DRAWN into a
+// generated Full Quiz set, regardless of whether that attempt was ever
+// finished. Lives in the same progress blob as everything else (so
+// export/import already covers it for free), keyed per question id.
+// Incrementing at draw-time (not completion-time) is deliberate: an
+// abandoned attempt still "used" that question's turn in the rotation.
+function getFullQuizUsage(qid) {
+  const progress = loadProgress();
+  return (progress.perQuestion[qid] && progress.perQuestion[qid].fullQuizUsageCount) || 0;
+}
+function incrementFullQuizUsage(qid) {
+  const progress = loadProgress();
+  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false };
+  progress.perQuestion[qid].fullQuizUsageCount = (progress.perQuestion[qid].fullQuizUsageCount || 0) + 1;
+  saveProgress(progress);
+}
+
+// Picks `count` least-used questions from a system's bank. Ties (equal
+// usage count) are broken randomly rather than by id order — shuffle the
+// whole pool first, then a stable sort by usage count preserves that
+// shuffled order within each usage tier.
+function pickLeastUsedQuestions(sysId, count) {
+  const pool = shuffleArray((QUESTIONS[sysId] || []).slice());
+  pool.sort((a, b) => getFullQuizUsage(a.id) - getFullQuizUsage(b.id));
+  return pool.slice(0, count);
+}
+
+// Builds one full 50-question set: per system (in SYSTEMS order — system
+// presentation order itself is NOT shuffled), pick the least-used
+// questions, shuffle their presentation order within that system, shuffle
+// each question's answer options, tag with _sys, and increment each
+// picked question's usage counter immediately (draw-time, not
+// completion-time — see getFullQuizUsage above).
+function generateFullQuizSet() {
+  const list = [];
+  SYSTEMS.forEach(sys => {
+    if (sys.isMenu) return;
+    const count = FULL_QUIZ_DISTRIBUTION[sys.id];
+    if (!count) return;
+    const picked = shuffleArray(pickLeastUsedQuestions(sys.id, count));
+    picked.forEach(q => {
+      incrementFullQuizUsage(q.id);
+      const indices = shuffleArray([0, 1, 2, 3]);
+      const newOptions = indices.map(i => q.options[i]);
+      const newCorrect = indices.indexOf(q.correct);
+      list.push(Object.assign({}, q, { options: newOptions, correct: newCorrect, _sys: sys.id }));
+    });
+  });
+  return list;
+}
+
+// Full Quiz in-progress state — separate from the Sequential Review
+// progress blob since it tracks a specific generated 50-question set
+// (with its own shuffled option order) rather than ground-school position.
+// Resumable across sessions/reloads for the same reason Sequential Review
+// is: a pilot may have to step away mid-test.
+const FULLQUIZ_KEY = "g550_fullquiz_state_v1";
+
+function loadFullQuizState() {
+  try {
+    const raw = localStorage.getItem(FULLQUIZ_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function saveFullQuizState(state) {
+  try { localStorage.setItem(FULLQUIZ_KEY, JSON.stringify(state)); } catch (e) {}
+}
+function clearFullQuizState() {
+  try { localStorage.removeItem(FULLQUIZ_KEY); } catch (e) {}
+}
+
 // Index of the first not-yet-resolved question in ground-school order —
 // this is the actual "resume point" logic: skip everything already
 // resolved in a prior Sequential Review pass, land on the first one that
@@ -2566,6 +2775,14 @@ function buildHomeScreen() {
       (overall.resolved > 0 ? " \u00B7 " + overall.pct + "% complete" : "");
   }
 
+  const fqCountEl = document.getElementById("fullquiz-count");
+  if (fqCountEl) {
+    const savedFq = loadFullQuizState();
+    fqCountEl.textContent = (savedFq && savedFq.currentIndex < savedFq.questions.length)
+      ? "In progress \u2014 tap to resume at Q" + (savedFq.currentIndex + 1) + " of " + savedFq.questions.length
+      : "50 questions \u00B7 all 15 systems";
+  }
+
   const grid = document.getElementById("system-grid");
   grid.innerHTML = "";
   SYSTEMS.forEach(sys => {
@@ -2668,7 +2885,36 @@ function startSystemQuiz(sysId) {
   renderQuestion();
 }
 
-function startFullQuiz()   { alert("Full Quiz coming soon! Select Hydraulics to try the live system."); }
+function startFullQuiz() {
+  const saved = loadFullQuizState();
+  if (saved && saved.currentIndex < saved.questions.length) {
+    showResumePrompt(saved.currentIndex, false, "full");
+  } else {
+    beginFullQuizFresh();
+  }
+}
+
+function beginFullQuizFresh() {
+  clearFullQuizState();
+  quizMode = "full";
+  currentSystem = "";
+  currentQuiz = generateFullQuizSet();
+  currentIndex = 0; answers = [];
+  saveFullQuizState({ questions: currentQuiz, currentIndex: 0, answers: [] });
+  document.getElementById("quiz-title").textContent = "50-Question Test";
+  showScreen("quiz-screen");
+  renderQuestion();
+}
+
+function resumeFullQuizAt(saved) {
+  quizMode = "full";
+  currentSystem = "";
+  currentQuiz = saved.questions;
+  currentIndex = saved.currentIndex;
+  answers = saved.answers;
+  showScreen("quiz-screen");
+  renderQuestion();
+}
 
 function startSequential() {
   const resumeIndex = getSequentialResumeIndex();
@@ -2681,11 +2927,39 @@ function startSequential() {
   }
 }
 
-function showResumePrompt(resumeIndex, isComplete) {
+function showResumePrompt(resumeIndex, isComplete, mode) {
+  mode = mode || "sequential";
   const titleEl   = document.getElementById("resume-title");
   const bodyEl    = document.getElementById("resume-body");
   const continueBtn = document.getElementById("resume-continue-btn");
   const restartBtn  = document.getElementById("resume-restart-btn");
+
+  if (mode === "full") {
+    // Full Quiz is always resumable-or-fresh — there is no "complete, start
+    // over?" case here the way Sequential Review has, because a completed
+    // Full Quiz attempt clears its own saved state right after scoring
+    // (see showResults()). If this prompt is showing for "full" mode at
+    // all, there's a genuine in-progress attempt.
+    const saved = loadFullQuizState();
+    const total = saved ? saved.questions.length : 50;
+    titleEl.textContent = "Welcome back!";
+    bodyEl.textContent = "You left off at Question " + (resumeIndex + 1) + " of " + total + " in your 50-Question Test.";
+    continueBtn.style.display = "block";
+    continueBtn.textContent = "Resume at Q" + (resumeIndex + 1);
+    restartBtn.textContent = "Start Over";
+
+    continueBtn.onclick = () => {
+      document.getElementById("resume-prompt").style.display = "none";
+      resumeFullQuizAt(saved);
+    };
+    restartBtn.onclick = () => {
+      document.getElementById("resume-prompt").style.display = "none";
+      beginFullQuizFresh();
+    };
+
+    document.getElementById("resume-prompt").style.display = "flex";
+    return;
+  }
 
   if (isComplete) {
     titleEl.textContent = "Review complete!";
@@ -2735,6 +3009,9 @@ function updateSystemTitle(q, sysName) {
   if (quizMode === "sequential" && q && q._sys) {
     titleEl.classList.add("with-system");
     titleEl.innerHTML = "Sequential Review \u2014 <span class=\"quiz-title-sys\">" + sysName + "</span>";
+  } else if (quizMode === "full" && q && q._sys) {
+    titleEl.classList.add("with-system");
+    titleEl.innerHTML = "50-Question Test \u2014 <span class=\"quiz-title-sys\">" + sysName + "</span>";
   } else {
     titleEl.classList.remove("with-system");
   }
@@ -2758,6 +3035,10 @@ function renderQuestion() {
     const overall = getOverallCompletion();
     updateMiniBar(overall.pct);
     barEl.style.display = "";
+  } else if (quizMode === "full") {
+    progressEl.innerHTML = "Question <b>" + (currentIndex+1) + "</b> of <b>" + total + "</b>";
+    updateMiniBar(Math.round((currentIndex / total) * 100));
+    barEl.style.display = "";
   } else {
     progressEl.textContent = "Q " + (currentIndex+1) + " of " + total;
     barEl.style.display = "none";
@@ -2774,7 +3055,7 @@ function renderQuestion() {
     const btn = document.createElement("button");
     btn.className = "option-btn";
     btn.innerHTML = "<span class=\"opt-letter\">" + letters[i] + "</span><span>" + opt + "</span>";
-    btn.onclick = () => selectAnswer(i);
+    btn.onclick = () => (quizMode === "full" ? selectAnswerFull(i) : selectAnswer(i));
     container.appendChild(btn);
   });
 
@@ -2785,6 +3066,8 @@ function renderQuestion() {
   const synInstr = document.getElementById("syn-instruction");
   if (synInstr) { synInstr.style.display = "none"; synInstr.textContent = ""; }
   document.getElementById("next-btn").style.display = "none";
+  // Full Quiz is single-attempt/no-going-back — Previous never applies.
+  if (quizMode === "full") document.getElementById("prev-btn").style.display = "none";
   document.getElementById("results-btn").style.display = "none";
 
   // Layout: full width if no synoptic, split if synoptic
@@ -2885,6 +3168,26 @@ window.addEventListener("resize", () => {
   }
 });
 
+// Which container an interactive synoptic switch (APU bleed, standby
+// rudder, DC bus tie, TRU) should write into. Derived fresh from actual
+// screen visibility on every call — not tracked in a variable — so
+// there's no flag that could ever go stale or get left un-reset. If the
+// Review Missed Questions screen is the one currently marked "active" by
+// showScreen(), that's the answer; otherwise it's the ordinary
+// quiz-screen panel. Correctness rides entirely on showScreen()'s
+// existing, already-tested active-screen bookkeeping, not on a second,
+// separately-maintained copy of the same fact.
+function getActiveSynContentId() {
+  const reviewScreen = document.getElementById("review-missed-screen");
+  if (reviewScreen && reviewScreen.classList.contains("active")) return "review-syn-content";
+  return "syn-content";
+}
+function getActiveSynToggleId() {
+  const reviewScreen = document.getElementById("review-missed-screen");
+  if (reviewScreen && reviewScreen.classList.contains("active")) return "review-syn-toggle";
+  return "syn-toggle";
+}
+
 function hideSynoptic() {
   const content = document.getElementById("syn-content");
   const toggleBar = document.getElementById("syn-toggle");
@@ -2892,17 +3195,17 @@ function hideSynoptic() {
   content.style.transition = "none";
   content.style.opacity = "1";
   if (toggleBar) toggleBar.innerHTML = "";
-  content.innerHTML = "<div class=\"syn-waiting\">Answer the question<br>to reveal the schematic.</div>";
+  content.innerHTML = "<div class=\"syn-waiting\">Synoptic will be displayed with a correct response.</div>";
 }
 
 function renderApuBleedState(state) {
-  const content = document.getElementById("syn-content");
+  const content = document.getElementById(getActiveSynContentId());
   if (!content) return;
   content.innerHTML = SYNOPTICS[state === "on" ? "pneu_apu_bleed_on" : "pneu_apu_bleed_off"] || "<div class=\"syn-placeholder\">Synoptic unavailable</div>";
 }
 
 function renderStandbyRudderState(state) {
-  const content = document.getElementById("syn-content");
+  const content = document.getElementById(getActiveSynContentId());
   if (!content) return;
   content.innerHTML = SYNOPTICS[state === "on" ? "hyd_stby_rudder_on" : "hyd_stby_rudder_off"] || "<div class=\"syn-placeholder\">Synoptic unavailable</div>";
 }
@@ -2920,13 +3223,13 @@ function renderStandbyRudderFcState(state) {
 }
 
 function renderTruSwitchState(state) {
-  const content = document.getElementById("syn-content");
+  const content = document.getElementById(getActiveSynContentId());
   if (!content) return;
   content.innerHTML = SYNOPTICS[state === "on" ? "dc_l_main_tru_on" : "dc_l_main_tru_off"] || "<div class=\"syn-placeholder\">Synoptic unavailable</div>";
 }
 
 function renderBusTieSwitchState(state) {
-  const content = document.getElementById("syn-content");
+  const content = document.getElementById(getActiveSynContentId());
   if (!content) return;
   content.innerHTML = SYNOPTICS[state === "auto" ? "ac_bus_tie_auto" : "ac_bus_tie_isln"] || "<div class=\"syn-placeholder\">Synoptic unavailable</div>";
 }
@@ -3022,9 +3325,11 @@ function onMasterSwitchClick() {
   }
 }
 
-function renderSynoptic(q) {
-  const content = document.getElementById("syn-content");
-  const toggleBar = document.getElementById("syn-toggle");
+function renderSynoptic(q, contentId, toggleId) {
+  contentId = contentId || "syn-content";
+  toggleId  = toggleId  || "syn-toggle";
+  const content = document.getElementById(contentId);
+  const toggleBar = document.getElementById(toggleId);
   if (!content) return;
   content.style.transition = "none";
   content.style.opacity = "1";
@@ -3071,8 +3376,13 @@ function renderSynoptic(q) {
   content.innerHTML = SYNOPTICS[q.synoptic] || "<div class=\"syn-placeholder\">Synoptic unavailable</div>";
 }
 
-function showSynoptic(q) {
-  renderSynoptic(q);
+function showSynoptic(q, contentId, toggleId) {
+  renderSynoptic(q, contentId, toggleId);
+  // syn-instruction only exists on the quiz-screen — skip it entirely when
+  // rendering into a different screen's synoptic panel (e.g. Review Missed
+  // Questions), rather than accidentally writing quiz-screen instruction
+  // text nowhere useful.
+  if (contentId && contentId !== "syn-content") return;
   const synInstr = document.getElementById("syn-instruction");
   if (synInstr) {
     if (q.synNote) {
@@ -3173,12 +3483,78 @@ function selectAnswer(chosen) {
   updateSystemTitle(q, SYSTEMS.find(s => s.id === (q._sys || currentSystem))?.name || "");
 }
 
+// Full Quiz answer handling — deliberately separate from selectAnswer()
+// rather than a shared branch, since the two behave quite differently:
+// single attempt only (no retry, no 2nd/3rd-attempt escalation), correct
+// reveals the synoptic once, incorrect reveals nothing at all (review is
+// the only place a miss ever gets explained). Fidelity with the real
+// closed-book written exam was the point.
+function selectAnswerFull(chosen) {
+  const q = currentQuiz[currentIndex];
+  const isCorrect = chosen === q.correct;
+  const btns = document.querySelectorAll(".option-btn");
+  const fb = document.getElementById("feedback-box");
+
+  btns.forEach(btn => { btn.disabled = true; });
+
+  if (isCorrect) {
+    btns[chosen].classList.add("correct");
+    btns[chosen].innerHTML += "<span class=\"picked-tag correct-tag\">Your answer</span>";
+    fb.style.display = "block";
+    fb.className = "feedback-box correct";
+    fb.textContent = "\u2713 Correct";
+    if (q.synoptic) showSynoptic(q);
+  } else {
+    btns[chosen].classList.add("picked-neutral");
+    btns[chosen].innerHTML += "<span class=\"picked-tag\">Your answer</span>";
+    fb.style.display = "block";
+    fb.className = "feedback-box incorrect";
+    fb.textContent = "\u2717 Incorrect";
+  }
+
+  answers.push({ qId: q.id, system: q._sys, isCorrect: isCorrect, chosen: chosen, correct: q.correct });
+
+  const isLast = currentIndex === currentQuiz.length - 1;
+  const nextBtn = document.getElementById("next-btn");
+  const resultsBtn = document.getElementById("results-btn");
+  nextBtn.style.display = isLast ? "none" : "block";
+  resultsBtn.style.display = isLast ? "block" : "none";
+  resultsBtn.textContent = "Test Complete \u2014 View Results \u2192";
+
+  // Deliberately NOT persisting here. saveFullQuizState only happens at
+  // question-advance (nextQuestion()) so a saved state's `answers` array
+  // and `currentIndex` always agree: currentIndex points at a genuinely
+  // unanswered question. Persisting immediately after answering (before
+  // "Next" is tapped) would let a resumed session re-answer a question
+  // whose answer was already recorded, double-counting it in the score.
+  // Worst case of this choice: closing the app between answering and
+  // tapping "Next" loses that one in-flight answer on resume — same as
+  // losing it on any pre-answer reload, and far better than corrupting
+  // the score.
+
+  fitQuestionCard();
+}
+
 function prevQuestion() {
   if (currentIndex > 0) { currentIndex--; renderQuestion(); }
 }
-function nextQuestion() { currentIndex++; renderQuestion(); }
+function nextQuestion() {
+  currentIndex++;
+  if (quizMode === "full") {
+    saveFullQuizState({ questions: currentQuiz, currentIndex: currentIndex, answers: answers });
+  }
+  renderQuestion();
+}
 
 function showResults() {
+  if (quizMode === "full") { showFullQuizResults(); return; }
+
+  document.getElementById("std-results-header").style.display = "";
+  document.getElementById("sys-results-grid").style.display = "";
+  document.getElementById("std-results-actions").style.display = "";
+  document.getElementById("full-results-block").style.display = "none";
+  document.getElementById("fq-results-actions").style.display = "none";
+
   const total   = answers.length;
   const correct = answers.filter(a => a.isCorrect).length;
   const pct     = Math.round((correct / total) * 100);
@@ -3238,6 +3614,188 @@ function showResults() {
   showScreen("results-screen");
 }
 
+// Full Quiz results: score/pass-fail banner (locked the moment this runs —
+// nothing in the Review screen afterward changes it) plus a per-system
+// breakdown. Clears the in-progress saved state now that the attempt is
+// complete, per Mark's rule that a new 50-question set is only generated
+// when the tile is tapped with nothing in progress.
+let fullQuizMissedList = [];
+let fullQuizReviewIndex = 0;
+
+function showFullQuizResults() {
+  clearFullQuizState();
+
+  document.getElementById("std-results-header").style.display = "none";
+  document.getElementById("sys-results-grid").style.display = "none";
+  document.getElementById("std-results-actions").style.display = "none";
+  document.getElementById("full-results-block").style.display = "";
+  document.getElementById("fq-results-actions").style.display = "";
+
+  const total = answers.length;
+  const correct = answers.filter(a => a.isCorrect).length;
+  const pct = Math.round((correct / total) * 100);
+  const passed = pct >= 80;
+
+  const banner = document.getElementById("fq-score-banner");
+  banner.className = "score-banner " + (passed ? "pass" : "fail");
+  const pctEl = document.getElementById("fq-score-pct");
+  pctEl.className = "score-pct " + (passed ? "pass" : "fail");
+  pctEl.textContent = pct + "%";
+  document.getElementById("fq-score-detail").textContent =
+    correct + " of " + total + " correct \u00B7 " + (total - correct) + " missed";
+  const badge = document.getElementById("fq-score-badge");
+  badge.className = "score-badge " + (passed ? "pass" : "fail");
+  badge.textContent = passed ? "Pass" : "Fail";
+
+  const breakdown = document.getElementById("fq-system-breakdown");
+  breakdown.innerHTML = "";
+  SYSTEMS.forEach(sys => {
+    if (sys.isMenu) return;
+    const sysAnswers = answers.filter(a => a.system === sys.id);
+    if (sysAnswers.length === 0) return;
+    const sysCorrect = sysAnswers.filter(a => a.isCorrect).length;
+    const sysTotal = sysAnswers.length;
+    const sysPct = Math.round((sysCorrect / sysTotal) * 100);
+    const barClass = sysPct >= 80 ? "good" : sysPct >= 60 ? "mid" : "weak";
+    const row = document.createElement("div");
+    row.className = "system-row";
+    row.innerHTML =
+      "<div class=\"system-row-name\">" + sys.name + "</div>" +
+      "<div class=\"system-bar-track\"><div class=\"system-bar-fill " + barClass + "\" style=\"width:" + sysPct + "%;\"></div></div>" +
+      "<div class=\"system-row-count\"><b>" + sysCorrect + "</b> / " + sysTotal + "</div>";
+    breakdown.appendChild(row);
+  });
+
+  fullQuizMissedList = answers.filter(a => !a.isCorrect);
+  document.getElementById("fq-review-btn").style.display = fullQuizMissedList.length > 0 ? "block" : "none";
+
+  showScreen("results-screen");
+}
+
+// ==================== REVIEW MISSED QUESTIONS ====================
+// Remedial only — nothing here changes the score already shown on the
+// results page. One more attempt at the correct answer per missed
+// question; a second miss reveals the correct answer + explanation, same
+// treatment as the existing 3rd-attempt reveal used elsewhere.
+function startReviewMissed() {
+  fullQuizReviewIndex = 0;
+  showScreen("review-missed-screen");
+  renderReviewQuestion();
+}
+
+function currentReviewAnswer() {
+  return fullQuizMissedList[fullQuizReviewIndex];
+}
+function currentReviewQuestion() {
+  const a = currentReviewAnswer();
+  return currentQuiz.find(q => q.id === a.qId);
+}
+
+function renderReviewQuestion() {
+  const a = currentReviewAnswer();
+  const q = currentReviewQuestion();
+  const sysName = SYSTEMS.find(s => s.id === a.system)?.name || "";
+  const letters = ["A","B","C","D"];
+
+  document.getElementById("review-title-sys").textContent = sysName;
+  document.getElementById("review-count").innerHTML =
+    "Missed Question <b>" + (fullQuizReviewIndex+1) + "</b> of <b>" + fullQuizMissedList.length + "</b>";
+  document.getElementById("review-q-number").textContent = sysName;
+  document.getElementById("review-q-text").textContent = q.text;
+
+  const note = document.getElementById("review-original-note");
+  note.innerHTML = "Your original answer was <b>" + letters[a.chosen] + ". " + q.options[a.chosen] + "</b> \u2014 incorrect. " +
+    (q.synoptic ? "Take another look at the synoptic, then try once more." : "Give it one more try.");
+
+  const fb = document.getElementById("review-feedback-box");
+  fb.style.display = "none";
+  fb.className = "feedback-box";
+
+  const expBox = document.getElementById("review-explanation-box");
+  expBox.style.display = "none";
+  expBox.innerHTML = "";
+
+  document.getElementById("review-next-btn").style.display = "none";
+  document.getElementById("review-done-btn").style.display = "none";
+
+  const container = document.getElementById("review-options-container");
+  container.innerHTML = "";
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.className = "option-btn" + (i === a.chosen ? " was-original-wrong" : "");
+    btn.innerHTML = "<span class=\"opt-letter\">" + letters[i] + "</span><span>" + opt + "</span>";
+    btn.onclick = () => selectReviewAnswer(i);
+    container.appendChild(btn);
+  });
+
+  // Synoptic panel — same renderSynoptic()/showSynoptic() used everywhere
+  // else, just pointed at this screen's own container ids so the exact
+  // same interactive switches (APU bleed, standby rudder, bus tie, etc.)
+  // work here unchanged. Which container a later switch-click updates is
+  // resolved fresh each time from actual screen visibility (see
+  // getActiveSynContentId()) — nothing to set or reset here.
+  if (q.synoptic) {
+    renderSynoptic(q, "review-syn-content", "review-syn-toggle");
+  } else {
+    document.getElementById("review-syn-toggle").innerHTML = "";
+    document.getElementById("review-syn-content").innerHTML =
+      "<div class=\"syn-placeholder\">No synoptic display<br>for this question.</div>";
+  }
+}
+
+function selectReviewAnswer(chosen) {
+  const a = currentReviewAnswer();
+  const q = currentReviewQuestion();
+  const letters = ["A","B","C","D"];
+  const btns = document.querySelectorAll("#review-options-container .option-btn");
+  const fb = document.getElementById("review-feedback-box");
+
+  btns.forEach(btn => { btn.disabled = true; });
+
+  if (chosen === q.correct) {
+    // Emphatic — genuinely different from the routine "Correct" banner,
+    // not just the same treatment in a bigger font. See dev notes.
+    btns[chosen].classList.add("correct-answer-reveal");
+    btns[chosen].innerHTML += "<span class=\"picked-tag correct-tag\">This attempt</span>";
+    if (a.chosen !== chosen) {
+      btns[a.chosen].innerHTML += "<span class=\"picked-tag wrong-tag\">Original answer</span>";
+    }
+    fb.style.display = "block";
+    fb.className = "feedback-box retry-win";
+    fb.innerHTML = "\u2605 You got it right this time!";
+    if (q.synoptic) showSynoptic(q, "review-syn-content", "review-syn-toggle");
+  } else {
+    btns[chosen].classList.add("picked-neutral");
+    btns[chosen].innerHTML += "<span class=\"picked-tag wrong-tag\">This attempt</span>";
+    btns[q.correct].classList.add("correct-answer-reveal");
+    btns[q.correct].innerHTML += "<span class=\"picked-tag correct-tag\">Correct answer</span>";
+    fb.style.display = "block";
+    fb.className = "feedback-box incorrect";
+    fb.textContent = "\u2717 Not quite \u2014 here's the explanation";
+
+    const expBox = document.getElementById("review-explanation-box");
+    expBox.style.display = "block";
+    expBox.textContent = q.explain || "";
+    if (q.synoptic) showSynoptic(q, "review-syn-content", "review-syn-toggle");
+  }
+
+  const isLast = fullQuizReviewIndex === fullQuizMissedList.length - 1;
+  document.getElementById("review-next-btn").style.display = isLast ? "none" : "block";
+  document.getElementById("review-done-btn").style.display = isLast ? "block" : "none";
+}
+
+function nextMissedQuestion() {
+  fullQuizReviewIndex++;
+  renderReviewQuestion();
+}
+
+function finishReview() {
+  // No synoptic-container state to reset — getActiveSynContentId() derives
+  // the answer fresh from showScreen()'s active-screen bookkeeping, so
+  // switching screens here is all that's needed for correctness.
+  showScreen("results-screen");
+}
+
 function retryQuiz() {
   if (quizMode === "sequential") { startSequential(); }
   else { startSystemQuiz(currentSystem); }
@@ -3258,6 +3816,14 @@ function showScreen(id) {
   } else {
     qs.style.display = "none";
     qs.classList.remove("active");
+  }
+  const rms = document.getElementById("review-missed-screen");
+  if (id === "review-missed-screen") {
+    rms.style.display = "flex";
+    rms.classList.add("active");
+  } else {
+    rms.style.display = "none";
+    rms.classList.remove("active");
   }
 }
 
