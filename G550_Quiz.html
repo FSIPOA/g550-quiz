@@ -73,10 +73,11 @@
      "caution," which reads too much like a cockpit alert for what's just
      a reset button. */
   .reset-progress-btn {
-    display: block; width: 100%; margin-top: 14px; padding: 12px;
+    display: block; width: fit-content; min-width: 220px; max-width: 46%;
+    margin: 14px auto 0; padding: 10px 22px;
     background: none; border: 1px solid var(--blue); color: var(--blue);
     font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
-    text-transform: uppercase; border-radius: 4px; cursor: pointer;
+    text-transform: uppercase; text-align: center; border-radius: 4px; cursor: pointer;
   }
   .reset-progress-btn:hover { background: rgba(56,189,248,0.10); }
   .sys-tile {
@@ -508,7 +509,7 @@
     <button class="progress-link-btn" onclick="showProgressBySystem()">Progress by System &#8594;</button>
   </div>
   <div class="system-grid" id="system-grid"></div>
-  <button class="reset-progress-btn" onclick="resetSystemProgress()">&#8635; Reset System Progress</button>
+  <button id="reset-progress-btn" class="reset-progress-btn" onclick="resetSystemProgress()">&#8635; Reset System Progress</button>
 </div>
 
 <div id="progress-by-system-screen">
@@ -2955,11 +2956,13 @@ function buildHomeScreen() {
 
   const grid = document.getElementById("system-grid");
   grid.innerHTML = "";
+  let anyTileDrillProgress = false;
   SYSTEMS.forEach(sys => {
     const tile = document.createElement("div");
     tile.className = "sys-tile " + (sys.live ? "live" : "soon");
     const metaLabel = sys.isMenu ? (sys.count + " available") : (sys.count + " questions");
     const completion = (sys.live && !sys.isMenu) ? getSystemTileDrillCompletion(sys.id) : null;
+    if (completion && completion.resolved > 0) anyTileDrillProgress = true;
     const completionBadge = completion
       ? "<span class=\"sys-complete-badge" + (completion.pct === 100 ? " done" : "") + "\">" + completion.pct + "% Completed</span>"
       : "";
@@ -2974,6 +2977,14 @@ function buildHomeScreen() {
     if (sys.isMenu) tile.style.gridColumn = "2"; // center it in the last, otherwise-lonely row
     grid.appendChild(tile);
   });
+  // Only worth showing once there's something it would actually clear —
+  // an all-0% state has nothing to reset, so the button just adds visual
+  // noise (and looks like it might do something on a screen that's
+  // already fresh). Re-evaluated on every buildHomeScreen() call, so it
+  // reappears the moment any tile gets its first answer and disappears
+  // again right after a reset.
+  const resetBtn = document.getElementById("reset-progress-btn");
+  if (resetBtn) resetBtn.style.display = anyTileDrillProgress ? "block" : "none";
   // Event delegation — one listener on the grid, fired for any live tile click.
   // buildHomeScreen() now re-runs every time the user returns home (so progress
   // badges stay current), so guard against attaching this more than once.
