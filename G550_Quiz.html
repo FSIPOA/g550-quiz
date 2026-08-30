@@ -3697,6 +3697,21 @@ function renderReviewQuestion() {
   const sysName = SYSTEMS.find(s => s.id === a.system)?.name || "";
   const letters = ["A","B","C","D"];
 
+  // Layout: full width if no synoptic, split if synoptic — same rule
+  // renderQuestion() applies on the main quiz screen. Scoped to
+  // #review-missed-screen specifically since the document has a second,
+  // unrelated .q-left/.q-right pair on the main quiz screen.
+  const reviewScreen = document.getElementById("review-missed-screen");
+  const qLeft  = reviewScreen.querySelector(".q-left");
+  const qRight = reviewScreen.querySelector(".q-right");
+  if (!q.synoptic) {
+    qLeft.classList.add("full-width");
+    qRight.classList.add("hidden");
+  } else {
+    qLeft.classList.remove("full-width");
+    qRight.classList.remove("hidden");
+  }
+
   document.getElementById("review-title-sys").textContent = sysName;
   document.getElementById("review-count").innerHTML =
     "Missed Question <b>" + (fullQuizReviewIndex+1) + "</b> of <b>" + fullQuizMissedList.length + "</b>";
@@ -3736,11 +3751,9 @@ function renderReviewQuestion() {
   // getActiveSynContentId()) — nothing to set or reset here.
   if (q.synoptic) {
     renderSynoptic(q, "review-syn-content", "review-syn-toggle");
-  } else {
-    document.getElementById("review-syn-toggle").innerHTML = "";
-    document.getElementById("review-syn-content").innerHTML =
-      "<div class=\"syn-placeholder\">No synoptic display<br>for this question.</div>";
   }
+  // No else branch: when there's no synoptic, .q-right is already hidden
+  // above, so there's no panel visible to populate with a placeholder.
 }
 
 function selectReviewAnswer(chosen) {
