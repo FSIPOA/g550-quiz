@@ -65,6 +65,16 @@
   .section-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--grey); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
 
   .system-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  /* Deliberately not red — red throughout this app means "wrong answer,"
+     and this isn't an error state, just a destructive action that needs
+     to read as distinct from the live/soon tile colors above it. */
+  .reset-progress-btn {
+    display: block; width: 100%; margin-top: 14px; padding: 12px;
+    background: none; border: 1px solid var(--amber); color: var(--amber);
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; border-radius: 4px; cursor: pointer;
+  }
+  .reset-progress-btn:hover { background: rgba(255,221,0,0.10); }
   .sys-tile {
     background: var(--panel-hi); border: 1px solid var(--border-hi);
     border-radius: 4px; padding: 15px 18px; cursor: pointer;
@@ -74,7 +84,7 @@
   .sys-tile.soon { opacity: 0.35; cursor: default; }
   .sys-tile .sys-name { font-size: 12px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; color: var(--white); margin-bottom: 7px; }
   .sys-tile.soon .sys-name { color: var(--grey); }
-  .sys-tile .sys-meta { font-size: 10px; color: var(--dim); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .sys-tile .sys-meta { font-size: 10px; color: var(--dim); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 8px; }
   .sys-tile .sys-name, .sys-tile .sys-meta { pointer-events: none; }
   .sys-tile.live .sys-meta .q-count { color: var(--green); font-weight: bold; }
   .soon-badge { font-size: 9px; letter-spacing: 0.1em; color: var(--dim); text-transform: uppercase; }
@@ -85,6 +95,49 @@
   #quiz-screen { display: none; flex: 1; flex-direction: column; }
   #quiz-screen.active { display: flex; }
   #functional-checks-screen { display: none; }
+  #progress-by-system-screen { display: none; }
+  #progress-by-system-screen .pbs-body { max-width: 900px; margin: 20px auto 0; }
+  #progress-by-system-screen .breakdown-label {
+    font-size: 11px; color: var(--grey); line-height: 1.6; margin-bottom: 18px;
+    text-transform: none; letter-spacing: normal;
+  }
+  .section-label-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;
+  }
+  .section-label-row .section-label { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+  .progress-link-btn {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim);
+    background: none; border: none; cursor: pointer; padding: 0; white-space: nowrap;
+    font-family: var(--font-mono);
+  }
+  .progress-link-btn:hover { color: var(--green); }
+  /* Red-to-green gradient completion bar — distinct from the score bars
+     used on results screens (which are discrete good/mid/weak thresholds
+     on accuracy). This one is continuous and represents raw completion
+     progress through a system's question bank, so a lightly-started
+     system reads red and a nearly-done one reads green, with everything
+     in between shaded accordingly — not a pass/fail judgment. */
+  .progress-gradient-track {
+    position: relative; height: 8px; border-radius: 4px; overflow: hidden;
+    background: linear-gradient(90deg, var(--red), var(--amber) 55%, var(--green));
+    border: 1px solid var(--border);
+  }
+  .progress-gradient-mask { position: absolute; top: 0; right: 0; bottom: 0; background: var(--panel); }
+  /* A true 0% still gets one visible pixel of red at the start of the
+     track, rather than the mask covering it completely — an all-covered
+     bar and "no data yet" look identical otherwise, which is exactly what
+     read as "missing" on the Full Quiz results screen earlier. */
+  .progress-gradient-mask.zero { right: auto; left: 2px; width: calc(100% - 2px); }
+  .system-row-pct { font-size: 11px; color: var(--dim); width: 34px; text-align: right; }
+  /* Progress by System uses its own 4-column row (name / bar / pct / count)
+     rather than the shared .system-row's 3 columns, so it doesn't disturb
+     the Full Quiz results breakdown that class already serves. */
+  .pbs-row {
+    display: grid; grid-template-columns: 1fr minmax(100px, 200px) 40px 70px;
+    align-items: center; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .pbs-row:last-child { border-bottom: none; }
   #fuel-fc-screen { display: none; }
   #fuel-fc-screen .fc-body {
     box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
@@ -446,8 +499,23 @@
       <div class="btn-count" id="sequential-count">ground school sequence</div>
     </button>
   </div>
-  <div class="section-label">Study by System &mdash; select a system to drill all its questions</div>
+  <div class="section-label-row">
+    <div class="section-label">Study by System &mdash; select a system to drill all its questions</div>
+    <button class="progress-link-btn" onclick="showProgressBySystem()">Progress by System &#8594;</button>
+  </div>
   <div class="system-grid" id="system-grid"></div>
+  <button class="reset-progress-btn" onclick="resetSystemProgress()">&#8635; Reset System Progress</button>
+</div>
+
+<div id="progress-by-system-screen">
+  <div class="quiz-header">
+    <button class="back-btn" onclick="goHome()">&#8592; Home</button>
+    <div class="quiz-title">Progress by System</div>
+  </div>
+  <div class="pbs-body">
+    <div class="breakdown-label">Tracks questions resolved while drilling each system's tile directly &mdash; answered correctly, or worked through to the explanation after 3 tries. Sequential Review and the 50-Question Test keep their own separate progress and aren't reflected here.</div>
+    <div id="pbs-system-breakdown"></div>
+  </div>
 </div>
 
 <div id="quiz-screen">
@@ -2574,16 +2642,55 @@ function saveProgress(progress) {
   try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch (e) {}
 }
 
+// Wipes every kind of local progress this app tracks: Sequential Review
+// position, per-system tile-drill completion, the Full Quiz fairness
+// rotation (fullQuizUsageCount), and any in-progress 50-Question Test —
+// everything reads back to 0%/fresh afterward. Confirmed first since
+// there's no export prompt in this flow and it can't be undone once
+// clicked through.
+// Scoped deliberately to tile-drill completion only — Sequential Review
+// keeps its own position (it has its own Start Over already) and the
+// 50-Question Test keeps its fairness rotation and any in-progress attempt
+// untouched. This button lives under the system tiles, so it should only
+// reset what those tiles track, not torch unrelated progress someone
+// wasn't trying to touch.
+function resetSystemProgress() {
+  const ok = confirm(
+    "Reset progress for all system tiles?\n\nThis clears each system's tile-drill completion so every tile starts fresh from Q1 again. Sequential Review position and the 50-Question Test are not affected. This cannot be undone."
+  );
+  if (!ok) return;
+  const progress = loadProgress();
+  Object.keys(progress.perQuestion).forEach(qid => {
+    if (progress.perQuestion[qid]) progress.perQuestion[qid].resolvedInTileDrill = false;
+  });
+  saveProgress(progress);
+  buildHomeScreen();
+}
+
 function markResolvedInSequential(qid) {
   const progress = loadProgress();
-  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false };
+  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false, resolvedInTileDrill: false };
   progress.perQuestion[qid].resolvedInSequential = true;
+  saveProgress(progress);
+}
+
+// Same "resolved" definition as Sequential Review (correct, or reached the
+// 3rd-wrong-attempt reveal) but kept as its own flag, tracked only while
+// drilling a system directly from its home-screen tile (quizMode ===
+// "system"). Deliberately separate from resolvedInSequential so drilling a
+// system via its tile doesn't cause Sequential Review to think that
+// question is already done (and vice versa) — see dev notes on the
+// staircase-completion flaw this was designed to avoid.
+function markResolvedInTileDrill(qid) {
+  const progress = loadProgress();
+  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false, resolvedInTileDrill: false };
+  progress.perQuestion[qid].resolvedInTileDrill = true;
   saveProgress(progress);
 }
 
 function recordAttempt(qid, isCorrect) {
   const progress = loadProgress();
-  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false };
+  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false, resolvedInTileDrill: false };
   progress.perQuestion[qid].attempts.push({ correct: isCorrect, ts: Date.now() });
   if (progress.perQuestion[qid].attempts.length > 5) progress.perQuestion[qid].attempts.shift();
   saveProgress(progress);
@@ -2611,7 +2718,7 @@ function getFullQuizUsage(qid) {
 }
 function incrementFullQuizUsage(qid) {
   const progress = loadProgress();
-  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false };
+  if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false, resolvedInTileDrill: false };
   progress.perQuestion[qid].fullQuizUsageCount = (progress.perQuestion[qid].fullQuizUsageCount || 0) + 1;
   saveProgress(progress);
 }
@@ -2735,6 +2842,65 @@ function getSystemCompletion(sysId) {
   return { resolved, total, pct: total ? Math.round((resolved / total) * 100) : 0 };
 }
 
+// Completion for the Progress by System screen — sourced from direct
+// tile-drilling (resolvedInTileDrill) rather than Sequential Review
+// position, so a system doesn't read 0% just because Sequential Review
+// hasn't reached it yet. Reads straight from QUESTIONS[sysId] rather than
+// SEQUENTIAL_QUESTIONS since it has no need for ground-school ordering.
+function getSystemTileDrillCompletion(sysId) {
+  const progress = loadProgress();
+  const bank = QUESTIONS[sysId] || [];
+  let resolved = 0;
+  bank.forEach(q => {
+    const rec = progress.perQuestion[q.id];
+    if (rec && rec.resolvedInTileDrill) resolved++;
+  });
+  const total = bank.length;
+  return { resolved, total, pct: total ? Math.round((resolved / total) * 100) : 0 };
+}
+
+// First not-yet-resolved question's position within QUESTIONS[sysId]'s own
+// (unshuffled) order — same "scan forward" approach as
+// getSequentialResumeIndex, so it stays correct regardless of the order
+// questions were actually answered in. Returns bank.length once every
+// question in the system has been resolved via tile drilling.
+function getSystemTileDrillResumeIndex(sysId) {
+  const progress = loadProgress();
+  const bank = QUESTIONS[sysId] || [];
+  for (let i = 0; i < bank.length; i++) {
+    const rec = progress.perQuestion[bank[i].id];
+    if (!rec || !rec.resolvedInTileDrill) return i;
+  }
+  return bank.length;
+}
+
+// Renders the Progress by System screen: one row per live system, a
+// continuous red-to-green completion bar, and a resolved/total count.
+// Same visual language as the Full Quiz per-system breakdown
+// (.system-row / .system-row-name / .system-row-count) but with a
+// gradient-mask bar instead of discrete good/mid/weak accuracy coloring,
+// since this represents completion progress, not a score.
+function showProgressBySystem() {
+  const breakdown = document.getElementById("pbs-system-breakdown");
+  breakdown.innerHTML = "";
+  SYSTEMS.forEach(sys => {
+    if (sys.isMenu) return;
+    const { resolved, total, pct } = getSystemTileDrillCompletion(sys.id);
+    const row = document.createElement("div");
+    row.className = "pbs-row";
+    const maskAttrs = pct === 0
+      ? "class=\"progress-gradient-mask zero\""
+      : "class=\"progress-gradient-mask\" style=\"width:" + (100 - pct) + "%;\"";
+    row.innerHTML =
+      "<div class=\"system-row-name\">" + sys.name + "</div>" +
+      "<div class=\"progress-gradient-track\"><div " + maskAttrs + "></div></div>" +
+      "<div class=\"system-row-pct\">" + pct + "%</div>" +
+      "<div class=\"system-row-count\"><b>" + resolved + "</b> / " + total + "</div>";
+    breakdown.appendChild(row);
+  });
+  showScreen("progress-by-system-screen");
+}
+
 function exportProgress() {
   const progress = loadProgress();
   const blob = new Blob([JSON.stringify(progress, null, 2)], { type: "application/json" });
@@ -2789,9 +2955,9 @@ function buildHomeScreen() {
     const tile = document.createElement("div");
     tile.className = "sys-tile " + (sys.live ? "live" : "soon");
     const metaLabel = sys.isMenu ? (sys.count + " available") : (sys.count + " questions");
-    const completion = (sys.live && !sys.isMenu) ? getSystemCompletion(sys.id) : null;
-    const completionBadge = (completion && completion.resolved > 0)
-      ? "<span class=\"sys-complete-badge" + (completion.pct === 100 ? " done" : "") + "\">" + completion.pct + "%</span>"
+    const completion = (sys.live && !sys.isMenu) ? getSystemTileDrillCompletion(sys.id) : null;
+    const completionBadge = completion
+      ? "<span class=\"sys-complete-badge" + (completion.pct === 100 ? " done" : "") + "\">" + completion.pct + "% Completed</span>"
       : "";
     tile.innerHTML =
       "<div class=\"sys-name\">" + (sys.live ? "<span class=\"live-dot\"></span>" : "") + sys.name + "</div>" +
@@ -2816,7 +2982,6 @@ function buildHomeScreen() {
         if (sys && sys.isMenu) {
           showScreen("functional-checks-screen");
         } else {
-          console.log("Tile clicked via delegation:", tile.dataset.sysId);
           startSystemQuiz(tile.dataset.sysId);
         }
       }
@@ -2855,32 +3020,62 @@ function shuffleArray(arr) {
   return arr;
 }
 
+// Tile drill now resumes where you left off (same idea as Sequential
+// Review's resume, scoped to one system) rather than always restarting at
+// Q1. Once every question in the bank has been resolved via tile drilling,
+// there's nothing left to resume to — from that point on, drilling this
+// system's tile shuffles question order and answer options for genuine
+// random review, same shuffle logic that's disabled everywhere else
+// pending project completion. Per-system, not global: other systems keep
+// resuming in bank order until they, too, are fully resolved.
 function startSystemQuiz(sysId) {
-  console.log("startSystemQuiz called with:", sysId);
   const sys = SYSTEMS.find(s => s.id === sysId);
   if (!sys || !sys.live) return;
+
+  const bank = QUESTIONS[sysId] || [];
+  const resumeIndex = getSystemTileDrillResumeIndex(sysId);
+
+  if (resumeIndex >= bank.length && bank.length > 0) {
+    beginSystemQuizShuffled(sysId);
+  } else if (resumeIndex <= 0) {
+    beginSystemQuizAt(sysId, 0);
+  } else {
+    showResumePrompt(resumeIndex, false, "system", sysId);
+  }
+}
+
+function beginSystemQuizAt(sysId, index) {
+  const sys = SYSTEMS.find(s => s.id === sysId);
+  currentSystem = sysId;
+  quizMode = "system";
+  currentQuiz = (QUESTIONS[sysId] || []).map(q => Object.assign({}, q, { _sys: sysId }));
+  currentIndex = index;
+  answers = [];
+  const titleEl = document.getElementById("quiz-title");
+  titleEl.classList.remove("with-system");
+  titleEl.textContent = sys.name;
+  showScreen("quiz-screen");
+  renderQuestion();
+}
+
+function beginSystemQuizShuffled(sysId) {
+  const sys = SYSTEMS.find(s => s.id === sysId);
   currentSystem = sysId;
   quizMode = "system";
 
-  // Deep copy and shuffle question order
   let questions = JSON.parse(JSON.stringify(QUESTIONS[sysId] || []));
-  console.log("Questions loaded:", questions.length);
-  // shuffleArray(questions); // DISABLED — re-enable when project complete
-
-  // Shuffle answer options, keeping correct answer tracked
-  questions = questions.map(q => {
-    const indices = [0, 1, 2, 3];
-    // shuffleArray(indices); // DISABLED — re-enable when project complete
+  questions = shuffleArray(questions).map(q => {
+    const indices = shuffleArray([0, 1, 2, 3]);
     const newOptions = indices.map(i => q.options[i]);
     const newCorrect = indices.indexOf(q.correct);
-    return Object.assign({}, q, {options: newOptions, correct: newCorrect, _sys: sysId});
+    return Object.assign({}, q, { options: newOptions, correct: newCorrect, _sys: sysId });
   });
 
   currentQuiz = questions;
   currentIndex = 0; answers = [];
   const titleEl = document.getElementById("quiz-title");
   titleEl.classList.remove("with-system");
-  titleEl.textContent = sys.name;
+  titleEl.textContent = sys.name + " — Shuffled Review";
   showScreen("quiz-screen");
   renderQuestion();
 }
@@ -2927,12 +3122,40 @@ function startSequential() {
   }
 }
 
-function showResumePrompt(resumeIndex, isComplete, mode) {
+function showResumePrompt(resumeIndex, isComplete, mode, sysId) {
   mode = mode || "sequential";
   const titleEl   = document.getElementById("resume-title");
   const bodyEl    = document.getElementById("resume-body");
   const continueBtn = document.getElementById("resume-continue-btn");
   const restartBtn  = document.getElementById("resume-restart-btn");
+
+  if (mode === "system") {
+    // Per-system tile drill resume — same shape as Sequential Review's
+    // prompt, just scoped to one system's own bank instead of the full
+    // ground-school sequence. Only shown when there's a genuine partial
+    // position to resume to; a fresh system skips straight in (see
+    // startSystemQuiz) and a fully-resolved one goes straight to shuffled
+    // review instead of this prompt.
+    const sys = SYSTEMS.find(s => s.id === sysId);
+    const total = (QUESTIONS[sysId] || []).length;
+    titleEl.textContent = "Welcome back!";
+    bodyEl.textContent = "You left off at Question " + (resumeIndex + 1) + " of " + total + " in " + sys.name + ".";
+    continueBtn.style.display = "block";
+    continueBtn.textContent = "Resume at Q" + (resumeIndex + 1);
+    restartBtn.textContent = "Start Over";
+
+    continueBtn.onclick = () => {
+      document.getElementById("resume-prompt").style.display = "none";
+      beginSystemQuizAt(sysId, resumeIndex);
+    };
+    restartBtn.onclick = () => {
+      document.getElementById("resume-prompt").style.display = "none";
+      beginSystemQuizAt(sysId, 0);
+    };
+
+    document.getElementById("resume-prompt").style.display = "flex";
+    return;
+  }
 
   if (mode === "full") {
     // Full Quiz is always resumable-or-fresh — there is no "complete, start
@@ -3425,6 +3648,8 @@ function selectAnswer(chosen) {
     if (quizMode === "sequential") {
       recordAttempt(q.id, true);
       markResolvedInSequential(q.id);
+    } else if (quizMode === "system") {
+      markResolvedInTileDrill(q.id);
     }
 
     const isLast = currentIndex === currentQuiz.length - 1;
@@ -3454,6 +3679,7 @@ function selectAnswer(chosen) {
 
       answers.push({ qId: q.id, system: q._sys || currentSystem, isCorrect: false, attempts: attemptCount });
       if (quizMode === "sequential") markResolvedInSequential(q.id);
+      else if (quizMode === "system") markResolvedInTileDrill(q.id);
 
       const isLast = currentIndex === currentQuiz.length - 1;
       document.getElementById("next-btn").style.display    = isLast ? "none"  : "block";
@@ -3819,6 +4045,7 @@ function showScreen(id) {
   document.getElementById("home-screen").style.display    = id === "home-screen"    ? "block" : "none";
   document.getElementById("results-screen").style.display = id === "results-screen" ? "block" : "none";
   document.getElementById("functional-checks-screen").style.display = id === "functional-checks-screen" ? "block" : "none";
+  document.getElementById("progress-by-system-screen").style.display = id === "progress-by-system-screen" ? "block" : "none";
   document.getElementById("fuel-fc-screen").style.display = id === "fuel-fc-screen" ? "block" : "none";
   document.getElementById("standby-rudder-fc-screen").style.display = id === "standby-rudder-fc-screen" ? "block" : "none";
   if (id === "standby-rudder-fc-screen") renderStandbyRudderFcState("off");
