@@ -14,6 +14,7 @@
     --green:     #3aee6a;
     --green-dim: rgba(58,238,106,0.15);
     --amber:     #ffdd00;
+    --blue:      #8ae6ff;
     --red:       #ff5a5a;
     --white:     #f0f4f8;
     --grey:      #c8d0da;
@@ -67,14 +68,17 @@
   .system-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
   /* Deliberately not red — red throughout this app means "wrong answer,"
      and this isn't an error state, just a destructive action that needs
-     to read as distinct from the live/soon tile colors above it. */
+     to read as distinct from the live/soon tile colors above it. Blue
+     rather than amber specifically — amber elsewhere in this app means
+     "caution," which reads too much like a cockpit alert for what's just
+     a reset button. */
   .reset-progress-btn {
     display: block; width: 100%; margin-top: 14px; padding: 12px;
-    background: none; border: 1px solid var(--amber); color: var(--amber);
+    background: none; border: 1px solid var(--blue); color: var(--blue);
     font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
     text-transform: uppercase; border-radius: 4px; cursor: pointer;
   }
-  .reset-progress-btn:hover { background: rgba(255,221,0,0.10); }
+  .reset-progress-btn:hover { background: rgba(56,189,248,0.10); }
   .sys-tile {
     background: var(--panel-hi); border: 1px solid var(--border-hi);
     border-radius: 4px; padding: 15px 18px; cursor: pointer;
@@ -88,7 +92,7 @@
   .sys-tile .sys-name, .sys-tile .sys-meta { pointer-events: none; }
   .sys-tile.live .sys-meta .q-count { color: var(--green); font-weight: bold; }
   .soon-badge { font-size: 9px; letter-spacing: 0.1em; color: var(--dim); text-transform: uppercase; }
-  .sys-complete-badge { font-size: 9px; letter-spacing: 0.06em; color: var(--amber); border: 1px solid var(--amber); border-radius: 10px; padding: 1px 7px; }
+  .sys-complete-badge { font-size: 9px; letter-spacing: 0.06em; color: var(--blue); border: 1px solid var(--blue); border-radius: 10px; padding: 1px 7px; }
   .sys-complete-badge.done { color: var(--green); border-color: var(--green); }
   .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 7px; vertical-align: middle; box-shadow: 0 0 6px var(--green); }
 
