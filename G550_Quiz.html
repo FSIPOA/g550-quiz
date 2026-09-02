@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>G550 Oral Exam Prep</title>
+<title>Gulfstream 550 - Initial Type Rating and Recurrent Training</title>
 <style>
   :root {
     --bg:        #14171b;
@@ -45,6 +45,17 @@
   }
   header h1 { font-size: 18px; font-weight: bold; letter-spacing: 0.1em; color: var(--white); text-transform: uppercase; }
   header .tail { font-size: 11px; color: var(--white); letter-spacing: 0.14em; }
+  .about-btn {
+    margin-left: auto; background: none; border: 1px solid var(--border-hi); color: var(--grey);
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 14px;
+    border-radius: 4px; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+  }
+  .about-btn:hover { border-color: var(--green); color: var(--green); }
+  .about-modal-body h3 { font-size: 14px; color: var(--white); margin: 22px 0 10px; }
+  .about-modal-body p { font-size: 13px; color: var(--grey); line-height: 1.7; margin: 0 0 14px; }
+  .about-modal-body ul { margin: 0 0 14px; padding-left: 20px; }
+  .about-modal-body li { font-size: 13px; color: var(--grey); line-height: 1.7; margin-bottom: 10px; }
+  .about-modal-body li em { color: var(--white); font-style: normal; font-weight: bold; }
 
   main { flex: 1; padding: 16px 20px 20px; max-width: 1200px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; }
 
@@ -87,14 +98,16 @@
   }
   .sys-tile.live:hover { border-color: var(--green); background: rgba(58,238,106,0.10); }
   .sys-tile.soon { opacity: 0.35; cursor: default; }
-  .sys-tile .sys-name { font-size: 12px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; color: var(--white); margin-bottom: 7px; }
+  .sys-tile .sys-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 7px; }
+  .sys-tile .sys-name { font-size: 12px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; color: var(--white); }
   .sys-tile.soon .sys-name { color: var(--grey); }
   .sys-tile .sys-meta { font-size: 10px; color: var(--dim); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 8px; }
-  .sys-tile .sys-name, .sys-tile .sys-meta { pointer-events: none; }
+  .sys-tile .sys-top-row, .sys-tile .sys-name, .sys-tile .sys-meta { pointer-events: none; }
   .sys-tile.live .sys-meta .q-count { color: var(--green); font-weight: bold; }
   .soon-badge { font-size: 9px; letter-spacing: 0.1em; color: var(--dim); text-transform: uppercase; }
   .sys-complete-badge { font-size: 9px; letter-spacing: 0.06em; color: var(--blue); border: 1px solid var(--blue); border-radius: 10px; padding: 1px 7px; }
   .sys-complete-badge.done { color: var(--green); border-color: var(--green); }
+  .sys-proficient-badge { display: inline-block; flex-shrink: 0; font-size: 9px; font-weight: bold; letter-spacing: 0.06em; color: var(--bg); background: var(--green); border-radius: 10px; padding: 1px 7px; }
   .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 7px; vertical-align: middle; box-shadow: 0 0 6px var(--green); }
 
   #quiz-screen { display: none; flex: 1; flex-direction: column; }
@@ -486,10 +499,31 @@
   </div>
 </div>
 
+<div id="about-modal" style="display:none; position:fixed; inset:0; background:rgba(10,12,14,0.82); z-index:999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--panel-hi); border:1px solid var(--border-hi); border-radius:6px; padding:32px 36px; max-width:1080px; width:100%; max-height:90vh; overflow-y:auto; text-align:left;">
+    <div style="font-size:17px; color:var(--white); margin-bottom:4px; font-weight:bold; letter-spacing:0.03em;">About this study guide</div>
+    <div class="about-modal-body">
+      <p>This tool supports three ways to practice: <em>Full Quiz</em> (a randomly sampled 50-question test proportional to system size, similar in spirit to a real written exam), <em>Sequential Review</em> (every question, in ground-school order, front to back), and <em>Study by System</em> (drill one system's question bank directly). Progress and completion are tracked separately for each.</p>
+      <h3>How &ldquo;Proficient&rdquo; is determined</h3>
+      <p>Each system tile can show a &ldquo;Proficient&rdquo; badge once you've made sufficient attempts in that system to assess proficiency. It's a rolling calculation, recalculating fresh each time you study that system &mdash; reflecting where you stand right now, not where you stood months ago.</p>
+      <p>A few design choices behind this, briefly:</p>
+      <ul>
+        <li><em>Why recent attempts, not a lifetime average.</em> Rolling, recent-performance criteria are standard practice in adaptive learning systems, used at scale by platforms like ASSISTments and Khan Academy (Pelánek &amp; Řihák, 2017).</li>
+        <li><em>Why no extra credit for a fast correct answer.</em> A first-attempt correct answer isn't necessarily a clean read on knowledge &mdash; multiple-choice items can be answered correctly through elimination or item-writing cues rather than actual mastery, an effect the research literature calls &ldquo;test-wiseness&rdquo; (Smith, 1982; Downing, 2002). Every correct answer counts the same, regardless of which attempt it took.</li>
+        <li><em>Why the badge fades with inactivity.</em> Proficiency measured once doesn't stay true forever. This mirrors the shift aviation training itself has made away from hours-based training toward proficiency-based training, under programs like the FAA's Advanced Qualification Program (AQP) and ICAO/IATA Competency-Based Training and Assessment (CBTA) &mdash; an idea that traces back to Bloom's mastery learning model (1968).</li>
+      </ul>
+      <p>This is a study aid, not a certifying instrument. &ldquo;Proficient&rdquo; means your recent performance on this system meets a defined bar &mdash; it's a prompt to keep practicing where it's absent, not a substitute for instructor evaluation or an actual checkride.</p>
+    </div>
+    <div style="text-align:center; margin-top:8px;">
+      <button class="nav-btn" onclick="closeAboutModal()" style="display:inline-block; border-color:var(--border-hi); color:var(--grey); background:none;">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="app">
 <header>
-  <h1>G550 Oral Exam Prep</h1>
-  <span class="tail">Gulfstream G550 &middot; Initial Type Rating</span>
+  <h1>Gulfstream 550 - Initial Type Rating and Recurrent Training</h1>
+  <button class="about-btn" onclick="openAboutModal()">About</button>
 </header>
 <main>
 
@@ -500,7 +534,7 @@
       <div class="btn-desc">Randomly sampled questions from all systems, proportional to system size. Results show overall score plus a breakdown by system.</div>
       <div class="btn-count" id="fullquiz-count">50 questions &middot; all 15 systems</div>
     </button>
-    <button class="entry-btn secondary" onclick="startSequential()">
+    <button class="entry-btn primary" onclick="startSequential()">
       <div class="btn-label">&#9654; Sequential Review</div>
       <div class="btn-desc">Work through all questions in ground school order, system by system. Best for initial study or a full pre-check refresher.</div>
       <div class="btn-count" id="sequential-count">ground school sequence</div>
@@ -2710,8 +2744,41 @@ function recordAttempt(qid, isCorrect) {
   const progress = loadProgress();
   if (!progress.perQuestion[qid]) progress.perQuestion[qid] = { attempts: [], resolvedInSequential: false, resolvedInTileDrill: false };
   progress.perQuestion[qid].attempts.push({ correct: isCorrect, ts: Date.now() });
-  if (progress.perQuestion[qid].attempts.length > 5) progress.perQuestion[qid].attempts.shift();
+  if (progress.perQuestion[qid].attempts.length > 10) progress.perQuestion[qid].attempts.shift();
   saveProgress(progress);
+}
+
+// ==================== SYSTEM PROFICIENCY ====================
+// A rolling, time-windowed proficiency signal per system, derived fresh
+// every time from the same per-question attempt history recordAttempt()
+// already saves (now fed by Sequential Review, tile drill, and Full Quiz
+// alike). Nothing about "proficient" itself is stored -- that's what
+// makes it self-clearing: attempts older than PROFICIENCY_MONTHS simply
+// stop counting toward the floor, so a system a student hasn't touched
+// in a long while quietly loses its badge with no reset button needed.
+const PROFICIENCY_WINDOW = 8;      // look at the most recent N pooled attempts
+const PROFICIENCY_THRESHOLD = 6;   // ...need at least this many correct...
+const PROFICIENCY_FLOOR = 12;      // ...but only once at least this many attempts exist...
+const PROFICIENCY_MONTHS = 6;      // ...within this many trailing months.
+
+function isSystemProficient(sysId) {
+  const progress = loadProgress();
+  const bank = QUESTIONS[sysId] || [];
+  const cutoff = Date.now() - PROFICIENCY_MONTHS * 30 * 24 * 60 * 60 * 1000;
+  let pooled = [];
+  bank.forEach(function (q) {
+    const rec = progress.perQuestion[q.id];
+    if (rec && rec.attempts) {
+      rec.attempts.forEach(function (a) {
+        if (a.ts >= cutoff) pooled.push(a);
+      });
+    }
+  });
+  if (pooled.length < PROFICIENCY_FLOOR) return false;
+  pooled.sort(function (a, b) { return a.ts - b.ts; });
+  const recent = pooled.slice(-PROFICIENCY_WINDOW);
+  const correctCount = recent.filter(function (a) { return a.correct; }).length;
+  return correctCount >= PROFICIENCY_THRESHOLD;
 }
 
 // ==================== FULL QUIZ (50-QUESTION TEST) ====================
@@ -2951,6 +3018,13 @@ function importProgressFile(file) {
   reader.readAsText(file);
 }
 
+function openAboutModal() {
+  document.getElementById("about-modal").style.display = "flex";
+}
+function closeAboutModal() {
+  document.getElementById("about-modal").style.display = "none";
+}
+
 function buildHomeScreen() {
   const overall = getOverallCompletion();
   const seqCountEl = document.getElementById("sequential-count");
@@ -2976,11 +3050,16 @@ function buildHomeScreen() {
     const metaLabel = sys.isMenu ? (sys.count + " available") : (sys.count + " questions");
     const completion = (sys.live && !sys.isMenu) ? getSystemTileDrillCompletion(sys.id) : null;
     if (completion && completion.resolved > 0) anyTileDrillProgress = true;
+    const proficient = (sys.live && !sys.isMenu) ? isSystemProficient(sys.id) : false;
+    const proficientBadge = proficient ? "<div class=\"sys-proficient-badge\">Proficient</div>" : "";
     const completionBadge = completion
       ? "<span class=\"sys-complete-badge" + (completion.pct === 100 ? " done" : "") + "\">" + completion.pct + "% Completed</span>"
       : "";
     tile.innerHTML =
-      "<div class=\"sys-name\">" + (sys.live ? "<span class=\"live-dot\"></span>" : "") + sys.name + "</div>" +
+      "<div class=\"sys-top-row\">" +
+        "<div class=\"sys-name\">" + (sys.live ? "<span class=\"live-dot\"></span>" : "") + sys.name + "</div>" +
+        proficientBadge +
+      "</div>" +
       "<div class=\"sys-meta\">" +
         "<span class=\"" + (sys.live ? "q-count" : "") + "\">" + metaLabel + "</span>" +
         completionBadge +
@@ -3855,6 +3934,7 @@ function selectAnswer(chosen) {
       recordAttempt(q.id, true);
       markResolvedInSequential(q.id);
     } else if (quizMode === "system") {
+      recordAttempt(q.id, true);
       markResolvedInTileDrill(q.id);
     }
 
@@ -3869,7 +3949,7 @@ function selectAnswer(chosen) {
     btns[chosen].classList.add("wrong");
     btns[chosen].disabled = true;
     btns[chosen].classList.add("eliminated");
-    if (quizMode === "sequential") recordAttempt(q.id, false);
+    if (quizMode === "sequential" || quizMode === "system") recordAttempt(q.id, false);
 
     if (attemptCount >= 3) {
       // THIRD WRONG — lock everything, reveal synoptic/photo (if any), show correct answer + explanation
@@ -3949,6 +4029,7 @@ function selectAnswerFull(chosen) {
     fb.textContent = "\u2717 Incorrect";
   }
 
+  recordAttempt(q.id, isCorrect);
   answers.push({ qId: q.id, system: q._sys, isCorrect: isCorrect, chosen: chosen, correct: q.correct });
 
   const isLast = currentIndex === currentQuiz.length - 1;
