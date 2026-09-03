@@ -59,7 +59,7 @@
 
   main { flex: 1; padding: 16px 20px 20px; max-width: 1200px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; }
 
-  .entry-row { display: flex; gap: 14px; margin-bottom: 24px; }
+  .entry-row { display: flex; gap: 14px; margin-bottom: 18px; }
   .entry-btn {
     flex: 1; padding: 18px 22px; background: var(--panel-hi);
     border: 1px solid var(--border-hi); border-radius: 4px; cursor: pointer;
@@ -68,15 +68,15 @@
   }
   .entry-btn.primary { border-color: var(--green); background: var(--green-dim); }
   .entry-btn:hover { border-color: var(--green); background: rgba(58,238,106,0.18); }
-  .entry-btn .btn-label { font-size: 13px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); margin-bottom: 7px; }
+  .entry-btn .btn-label { font-size: 15px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); margin-bottom: 7px; }
   .entry-btn.secondary .btn-label { color: var(--grey); }
   .entry-btn:hover .btn-label { color: var(--green); }
-  .entry-btn .btn-desc { font-size: 11px; color: var(--grey); line-height: 1.6; }
-  .entry-btn .btn-count { margin-top: 10px; font-size: 11px; color: var(--amber); letter-spacing: 0.06em; }
+  .entry-btn .btn-desc { font-size: 13px; color: var(--grey); line-height: 1.6; }
+  .entry-btn .btn-count { margin-top: 10px; font-size: 12px; color: var(--amber); letter-spacing: 0.06em; }
 
-  .section-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--grey); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .section-label { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--white); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
 
-  .system-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  .system-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   /* Deliberately not red — red throughout this app means "wrong answer,"
      and this isn't an error state, just a destructive action that needs
      to read as distinct from the live/soon tile colors above it. Blue
@@ -93,21 +93,21 @@
   .reset-progress-btn:hover { background: rgba(56,189,248,0.10); }
   .sys-tile {
     background: var(--panel-hi); border: 1px solid var(--border-hi);
-    border-radius: 4px; padding: 15px 18px; cursor: pointer;
+    border-radius: 4px; padding: 15px 20px; cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
   }
   .sys-tile.live:hover { border-color: var(--green); background: rgba(58,238,106,0.10); }
   .sys-tile.soon { opacity: 0.35; cursor: default; }
-  .sys-tile .sys-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 7px; }
-  .sys-tile .sys-name { font-size: 12px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; color: var(--white); }
+  .sys-tile .sys-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 5px; }
+  .sys-tile .sys-name { font-size: 14px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; color: var(--white); }
   .sys-tile.soon .sys-name { color: var(--grey); }
-  .sys-tile .sys-meta { font-size: 10px; color: var(--dim); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 8px; }
+  .sys-tile .sys-meta { font-size: 12px; color: var(--dim); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 8px; }
   .sys-tile .sys-top-row, .sys-tile .sys-name, .sys-tile .sys-meta { pointer-events: none; }
   .sys-tile.live .sys-meta .q-count { color: var(--green); font-weight: bold; }
   .soon-badge { font-size: 9px; letter-spacing: 0.1em; color: var(--dim); text-transform: uppercase; }
-  .sys-complete-badge { font-size: 9px; letter-spacing: 0.06em; color: var(--blue); border: 1px solid var(--blue); border-radius: 10px; padding: 1px 7px; }
+  .sys-complete-badge { font-size: 10px; letter-spacing: 0.06em; color: var(--blue); border: 1px solid var(--blue); border-radius: 10px; padding: 1px 7px; }
   .sys-complete-badge.done { color: var(--green); border-color: var(--green); }
-  .sys-proficient-badge { display: inline-block; flex-shrink: 0; font-size: 9px; font-weight: bold; letter-spacing: 0.06em; color: var(--bg); background: var(--green); border-radius: 10px; padding: 1px 7px; }
+  .sys-proficient-badge { display: inline-block; flex-shrink: 0; font-size: 10px; font-weight: bold; letter-spacing: 0.06em; color: var(--bg); background: var(--green); border-radius: 10px; padding: 1px 7px; }
   .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 7px; vertical-align: middle; box-shadow: 0 0 6px var(--green); }
 
   #quiz-screen { display: none; flex: 1; flex-direction: column; }
@@ -125,7 +125,7 @@
   }
   .section-label-row .section-label { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
   .progress-link-btn {
-    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim);
+    font-size: 12px; font-weight: bold; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue);
     background: none; border: none; cursor: pointer; padding: 0; white-space: nowrap;
     font-family: var(--font-mono);
   }
@@ -263,11 +263,11 @@
   }
   .quiz-title .quiz-title-sys { color: var(--green); }
   .sub-count {
-    font-size: 11px; color: var(--dim); letter-spacing: 0.04em;
+    font-size: 11px; color: var(--grey); letter-spacing: 0.04em;
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .sub-count b { color: var(--grey); }
+  .sub-count b { color: var(--white); }
 
   /* Mini total-progress bar — only shown during Sequential Review (hidden for
      per-system quiz mode, where the sub-count text already covers "Q x of y"). */
@@ -302,14 +302,14 @@
   .q-right { width: 58%; min-height: 0; transition: width 0.2s; }
   .q-right.hidden { display: none; }
 
-  .q-text { background: var(--panel-hi); border: 1px solid var(--border-hi); border-radius: 4px; padding: 16px 18px; font-size: 14px; line-height: 1.8; color: var(--white); flex-shrink: 0; }
+  .q-text { background: var(--panel-hi); border: 1px solid var(--border-hi); border-radius: 4px; padding: 16px 18px; font-size: 16px; line-height: 1.8; color: var(--white); flex-shrink: 0; }
   .q-number { font-size: 10px; color: var(--amber); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 8px; }
 
   .options { display: flex; flex-direction: column; gap: 7px; flex: 0 0 auto; justify-content: flex-start; }
   .option-btn {
     background: var(--panel-hi); border: 1px solid var(--border-hi); border-radius: 4px;
     padding: 13px 16px; cursor: pointer; text-align: left; font-family: var(--font-mono);
-    font-size: 13px; color: var(--white); line-height: 1.5;
+    font-size: 15px; color: var(--white); line-height: 1.5;
     transition: border-color 0.12s, background 0.12s, color 0.12s;
     display: flex; gap: 12px; align-items: flex-start;
   }
@@ -327,12 +327,12 @@
   .feedback-box.incorrect { border: 1px solid var(--red); color: var(--red); background: rgba(255,90,90,0.10); }
   .option-btn:disabled { cursor: default; }
 
-  .feedback-box { border-radius: 4px; padding: 12px 16px; font-size: 13px; line-height: 1.6; display: none; letter-spacing: 0.03em; flex-shrink: 0; }
+  .feedback-box { border-radius: 4px; padding: 12px 16px; font-size: 15px; line-height: 1.6; display: none; letter-spacing: 0.03em; flex-shrink: 0; }
   .feedback-box.correct  { border: 1px solid var(--green); color: var(--green); background: rgba(58,238,106,0.08); }
   .feedback-box.wrong    { border: 1px solid var(--amber); color: var(--amber); background: rgba(255,221,0,0.07); }
   .feedback-box.explain  { border: 1px solid var(--border-hi); color: var(--grey); background: var(--panel-hi); }
 
-  .syn-instruction { display: none; padding: 10px 14px; border: 1px solid var(--border-hi); border-radius: 4px; background: var(--panel-hi); color: var(--white); font-size: 13px; line-height: 1.6; flex-shrink: 0; }
+  .syn-instruction { display: none; padding: 10px 14px; border: 1px solid var(--border-hi); border-radius: 4px; background: var(--panel-hi); color: var(--white); font-size: 15px; line-height: 1.6; flex-shrink: 0; }
   .syn-spacer { flex-shrink: 0; height: 14px; }
 
   .nav-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; }
@@ -471,11 +471,11 @@
      regardless of the media condition. */
   @media (max-height: 800px) {
     .q-left { gap: 7px; }
-    .q-text { padding: 11px 15px; font-size: 13px; line-height: 1.6; }
+    .q-text { padding: 11px 15px; font-size: 14px; line-height: 1.6; }
     .options { gap: 5px; }
-    .option-btn { padding: 9px 14px; font-size: 12px; line-height: 1.4; }
-    .syn-instruction { padding: 7px 12px; font-size: 12px; line-height: 1.4; }
-    .feedback-box { padding: 8px 14px; font-size: 12px; line-height: 1.4; }
+    .option-btn { padding: 9px 14px; font-size: 13px; line-height: 1.4; }
+    .syn-instruction { padding: 7px 12px; font-size: 13px; line-height: 1.4; }
+    .feedback-box { padding: 8px 14px; font-size: 13px; line-height: 1.4; }
     .syn-spacer { height: 8px; }
   }
 </style>
@@ -488,11 +488,10 @@
   <p>This app is designed for<br>landscape orientation.</p>
 </div>
 
-<div id="lockout-screen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:2000; align-items:center; justify-content:center; padding:20px; text-align:center;">
-  <div style="max-width:480px;">
-    <div style="font-size:20px; color:var(--white); font-weight:bold; margin-bottom:14px; letter-spacing:0.03em;">Review period ended</div>
-    <p style="font-size:14px; color:var(--grey); line-height:1.7;">This SME review copy was available through September 20, 2026. Please contact Mark for the current version of the quiz.</p>
-  </div>
+<div id="lockout-screen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1000; color:var(--white); font-family:var(--font-mono); flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px; gap:14px;">
+  <div style="font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:var(--amber);">SME Review Copy</div>
+  <div style="font-size:20px; font-weight:bold; letter-spacing:0.06em;">Review period has ended</div>
+  <p style="font-size:14px; color:var(--grey); line-height:1.7; max-width:480px;">This review copy's access window closed on September&nbsp;20,&nbsp;2026. Please contact Mark if you need continued access.</p>
 </div>
 
 <div id="resume-prompt" style="display:none; position:fixed; inset:0; background:rgba(10,12,14,0.82); z-index:998; align-items:center; justify-content:center; padding:20px;">
@@ -544,7 +543,7 @@
     <button class="entry-btn primary" onclick="startSequential()">
       <div class="btn-label">&#9654; Sequential Review</div>
       <div class="btn-desc">Work through all questions in ground school order, system by system. Best for initial study or a full pre-check refresher.</div>
-      <div class="btn-count" id="sequential-count">ground school sequence</div>
+      <div class="btn-count" id="sequential-count">Ground School Sequence</div>
     </button>
   </div>
   <div class="section-label-row">
@@ -2672,11 +2671,6 @@ let quizMode="system"; // "system" | "sequential" | "full"
 // screen, and progress tracking can all resolve the right system regardless
 // of quiz mode.
 const SEQUENTIAL_QUESTIONS = (() => {
-  // SME REVIEW SHUFFLED BUILD: within each system, both question order and
-  // each question's answer-option order are shuffled. System traversal
-  // order itself is untouched (still SYSTEMS array order) -- only what
-  // happens inside each system's block is randomized, same convention
-  // generateFullQuizSet() already uses for Full Quiz.
   const list = [];
   SYSTEMS.forEach(sys => {
     if (sys.isMenu) return;
@@ -2689,6 +2683,29 @@ const SEQUENTIAL_QUESTIONS = (() => {
     });
   });
   return list;
+})();
+
+// Per-system shuffled pool for tile drill (SME review copy only) — built
+// once at load, same shuffle-order-and-options treatment as
+// SEQUENTIAL_QUESTIONS above, just keyed by system instead of flattened.
+// getSystemTileDrillResumeIndex and beginSystemQuizAt both read from this
+// fixed list rather than QUESTIONS[sysId] directly, so the resume index
+// (a raw array position) always points at the same question within one
+// page load — system order itself is untouched, only question order and
+// answer order within each system are shuffled.
+const TILE_DRILL_QUESTIONS = (() => {
+  const map = {};
+  SYSTEMS.forEach(sys => {
+    if (sys.isMenu) return;
+    const qs = shuffleArray((QUESTIONS[sys.id] || []).slice()).map(q => {
+      const indices = shuffleArray([0, 1, 2, 3]);
+      const newOptions = indices.map(i => q.options[i]);
+      const newCorrect = indices.indexOf(q.correct);
+      return Object.assign({}, q, { options: newOptions, correct: newCorrect });
+    });
+    map[sys.id] = qs;
+  });
+  return map;
 })();
 
 // ==================== PROGRESS PERSISTENCE ====================
@@ -2968,7 +2985,7 @@ function getSystemTileDrillCompletion(sysId) {
 // question in the system has been resolved via tile drilling.
 function getSystemTileDrillResumeIndex(sysId) {
   const progress = loadProgress();
-  const bank = QUESTIONS[sysId] || [];
+  const bank = TILE_DRILL_QUESTIONS[sysId] || [];
   for (let i = 0; i < bank.length; i++) {
     const rec = progress.perQuestion[bank[i].id];
     if (!rec || !rec.resolvedInTileDrill) return i;
@@ -3046,7 +3063,7 @@ function buildHomeScreen() {
   const overall = getOverallCompletion();
   const seqCountEl = document.getElementById("sequential-count");
   if (seqCountEl) {
-    seqCountEl.textContent = SEQUENTIAL_QUESTIONS.length + " questions \u00B7 ground school sequence" +
+    seqCountEl.textContent = SEQUENTIAL_QUESTIONS.length + " questions \u00B7 Ground School Sequence" +
       (overall.resolved > 0 ? " \u00B7 " + overall.pct + "% complete" : "");
   }
 
@@ -3156,20 +3173,24 @@ function shuffleArray(arr) {
 // unreachable from here for now). Re-enable by restoring the
 // beginSystemQuizShuffled(sysId) branch when ready.
 function startSystemQuiz(sysId) {
-  // SME REVIEW SHUFFLED BUILD: always a fresh shuffled pass through this
-  // system's bank (question order + each question's answer order) --
-  // no resume-position prompt, since a shuffled order makes "resume at
-  // Q14" meaningless. See beginSystemQuizShuffled().
   const sys = SYSTEMS.find(s => s.id === sysId);
   if (!sys || !sys.live) return;
-  beginSystemQuizShuffled(sysId);
+
+  const bank = TILE_DRILL_QUESTIONS[sysId] || [];
+  const resumeIndex = getSystemTileDrillResumeIndex(sysId);
+
+  if (resumeIndex <= 0 || resumeIndex >= bank.length) {
+    beginSystemQuizAt(sysId, 0);
+  } else {
+    showResumePrompt(resumeIndex, false, "system", sysId);
+  }
 }
 
 function beginSystemQuizAt(sysId, index) {
   const sys = SYSTEMS.find(s => s.id === sysId);
   currentSystem = sysId;
   quizMode = "system";
-  currentQuiz = (QUESTIONS[sysId] || []).map(q => Object.assign({}, q, { _sys: sysId }));
+  currentQuiz = (TILE_DRILL_QUESTIONS[sysId] || []).map(q => Object.assign({}, q, { _sys: sysId }));
   currentIndex = index;
   answers = [];
   const titleEl = document.getElementById("quiz-title");
@@ -3258,7 +3279,7 @@ function showResumePrompt(resumeIndex, isComplete, mode, sysId) {
     // startSystemQuiz) and a fully-resolved one goes straight to shuffled
     // review instead of this prompt.
     const sys = SYSTEMS.find(s => s.id === sysId);
-    const total = (QUESTIONS[sysId] || []).length;
+    const total = (TILE_DRILL_QUESTIONS[sysId] || []).length;
     titleEl.textContent = "Welcome back!";
     bodyEl.textContent = "You left off at Question " + (resumeIndex + 1) + " of " + total + " in " + sys.name + ".";
     continueBtn.style.display = "block";
@@ -4725,12 +4746,13 @@ function showScreen(id) {
 
 // ===== end Fuel Functional Check =====
 
-// SME REVIEW SHUFFLED BUILD: locks out entirely after LOCKOUT_DATE. Local
-// time via explicit Y/M/D args (not string parsing) to sidestep timezone
-// ambiguity -- this fires at local midnight starting Sept 21, 2026, i.e.
-// the review window runs through end-of-day Sept 20 wherever it's opened.
-const LOCKOUT_DATE = new Date(2026, 8, 21);
-if (Date.now() >= LOCKOUT_DATE.getTime()) {
+// SME Review Copy — client-side lockout. Not a real access-control
+// mechanism (there's no server to enforce it — anyone could edit this
+// date in the file), just a deterrent against casual re-sharing past the
+// intended review window. Checked at boot: if past the lockout date, the
+// interactive app is never built or shown — only the lockout message.
+const REVIEW_LOCKOUT_DATE = new Date("2026-09-20T23:59:59");
+if (new Date() > REVIEW_LOCKOUT_DATE) {
   document.getElementById("lockout-screen").style.display = "flex";
 } else {
   buildHomeScreen();
