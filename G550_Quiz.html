@@ -2716,6 +2716,7 @@ function resetSystemProgress() {
     if (progress.perQuestion[qid]) progress.perQuestion[qid].resolvedInTileDrill = false;
   });
   saveProgress(progress);
+  clearAllTilePasses();
   buildHomeScreen();
 }
 
@@ -2862,17 +2863,96 @@ function clearFullQuizState() {
   try { localStorage.removeItem(FULLQUIZ_KEY); } catch (e) {}
 }
 
-// Index of the first not-yet-resolved question in ground-school order —
-// this is the actual "resume point" logic: skip everything already
-// resolved in a prior Sequential Review pass, land on the first one that
-// isn't.
-function getSequentialResumeIndex() {
+// ==================== PER-PASS SHUFFLE + RESUME PERSISTENCE ====================
+// Sequential Review and Tile Drill each get one "pass" object, frozen the
+// moment a pass begins and saved to localStorage immediately — same
+// pattern Full Quiz already uses for its 50-question set. A pass holds:
+// the shuffled question order for this pass only (system order itself is
+// never shuffled), the current position within it, and (for Sequential
+// Review and Tile Drill only — Full Quiz has no retry loop) whichever
+// question is mid-attempt, so 1st/2nd-wrong state survives an
+// interruption instead of resetting. Position and shuffle order are only
+// ever regenerated when a pass is started fresh, is genuinely restarted,
+// or (Tile Drill only) has been fully resolved and is being re-entered
+// for another round of random review — never on an ordinary reload, so a
+// question already seen earlier in the pass can't reappear until the
+// whole pass is done.
+const SEQPASS_KEY = "g550_sequential_pass_v1";
+
+function loadSequentialPass() {
+  try {
+    const raw = localStorage.getItem(SEQPASS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && Array.isArray(parsed.questions) && parsed.questions.length === SEQUENTIAL_QUESTIONS.length) return parsed;
+  } catch (e) {}
+  return null;
+}
+function saveSequentialPass(pass) {
+  try { localStorage.setItem(SEQPASS_KEY, JSON.stringify(pass)); } catch (e) {}
+}
+function buildSequentialPass() {
+  const list = [];
+  SYSTEMS.forEach(sys => {
+    if (sys.isMenu) return;
+    const qs = shuffleArray((QUESTIONS[sys.id] || []).slice());
+    qs.forEach(q => {
+      const indices = shuffleArray([0, 1, 2, 3]);
+      const newOptions = indices.map(i => q.options[i]);
+      const newCorrect = indices.indexOf(q.correct);
+      list.push(Object.assign({}, q, { options: newOptions, correct: newCorrect, _sys: sys.id }));
+    });
+  });
+  const pass = { questions: list, currentIndex: 0, inProgress: null };
+  saveSequentialPass(pass);
+  return pass;
+}
+function resetSequentialProgressFlags() {
   const progress = loadProgress();
-  for (let i = 0; i < SEQUENTIAL_QUESTIONS.length; i++) {
-    const rec = progress.perQuestion[SEQUENTIAL_QUESTIONS[i].id];
-    if (!rec || !rec.resolvedInSequential) return i;
-  }
-  return SEQUENTIAL_QUESTIONS.length;
+  SEQUENTIAL_QUESTIONS.forEach(q => {
+    if (progress.perQuestion[q.id]) progress.perQuestion[q.id].resolvedInSequential = false;
+  });
+  saveProgress(progress);
+}
+
+// Tile Drill keeps one pass per system (an object keyed by sysId) since
+// each system tile tracks its own independent shuffle/position.
+const TILEPASS_KEY = "g550_tile_pass_v1";
+
+function loadAllTilePasses() {
+  try {
+    const raw = localStorage.getItem(TILEPASS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch (e) {}
+  return {};
+}
+function saveAllTilePasses(all) {
+  try { localStorage.setItem(TILEPASS_KEY, JSON.stringify(all)); } catch (e) {}
+}
+function loadTilePass(sysId) {
+  const pass = loadAllTilePasses()[sysId];
+  if (pass && Array.isArray(pass.questions) && pass.questions.length === (QUESTIONS[sysId] || []).length) return pass;
+  return null;
+}
+function saveTilePass(sysId, pass) {
+  const all = loadAllTilePasses();
+  all[sysId] = pass;
+  saveAllTilePasses(all);
+}
+function clearAllTilePasses() {
+  try { localStorage.removeItem(TILEPASS_KEY); } catch (e) {}
+}
+function buildTilePass(sysId) {
+  const bank = shuffleArray((QUESTIONS[sysId] || []).slice());
+  const questions = bank.map(q => {
+    const indices = shuffleArray([0, 1, 2, 3]);
+    const newOptions = indices.map(i => q.options[i]);
+    const newCorrect = indices.indexOf(q.correct);
+    return Object.assign({}, q, { options: newOptions, correct: newCorrect, _sys: sysId });
+  });
+  const pass = { questions: questions, currentIndex: 0, inProgress: null };
+  saveTilePass(sysId, pass);
+  return pass;
 }
 
 // How much of the Sequential Review has been resolved, overall and per
@@ -2891,15 +2971,17 @@ function getOverallCompletion() {
 }
 
 // Position of the question at `index` within its own system's block of
-// SEQUENTIAL_QUESTIONS (e.g. "14 of 33"), for the header sub-count during
-// Sequential Review. Counts matches by _sys rather than assuming a
-// contiguous block, so it stays correct even if ground-school order is
-// ever re-sorted.
+// the current pass (e.g. "14 of 33"), for the header sub-count during
+// Sequential Review. Reads from currentQuiz — this pass's own shuffled
+// order — rather than the fixed SEQUENTIAL_QUESTIONS list, since a given
+// index no longer refers to the same question in both. Counts matches by
+// _sys rather than assuming a contiguous block, so it stays correct
+// regardless of shuffle order.
 function getSystemPositionInSequential(index) {
-  const sysId = SEQUENTIAL_QUESTIONS[index]._sys;
+  const sysId = currentQuiz[index]._sys;
   let total = 0, position = 0;
-  for (let i = 0; i < SEQUENTIAL_QUESTIONS.length; i++) {
-    if (SEQUENTIAL_QUESTIONS[i]._sys === sysId) {
+  for (let i = 0; i < currentQuiz.length; i++) {
+    if (currentQuiz[i]._sys === sysId) {
       total++;
       if (i <= index) position++;
     }
@@ -2944,20 +3026,6 @@ function getSystemTileDrillCompletion(sysId) {
   return { resolved, total, pct: total ? Math.round((resolved / total) * 100) : 0 };
 }
 
-// First not-yet-resolved question's position within QUESTIONS[sysId]'s own
-// (unshuffled) order — same "scan forward" approach as
-// getSequentialResumeIndex, so it stays correct regardless of the order
-// questions were actually answered in. Returns bank.length once every
-// question in the system has been resolved via tile drilling.
-function getSystemTileDrillResumeIndex(sysId) {
-  const progress = loadProgress();
-  const bank = QUESTIONS[sysId] || [];
-  for (let i = 0; i < bank.length; i++) {
-    const rec = progress.perQuestion[bank[i].id];
-    if (!rec || !rec.resolvedInTileDrill) return i;
-  }
-  return bank.length;
-}
 
 // Renders the Progress by System screen: one row per live system, a
 // continuous red-to-green completion bar, and a resolved/total count.
@@ -3036,9 +3104,15 @@ function buildHomeScreen() {
   const fqCountEl = document.getElementById("fullquiz-count");
   if (fqCountEl) {
     const savedFq = loadFullQuizState();
-    fqCountEl.textContent = (savedFq && savedFq.currentIndex < savedFq.questions.length)
-      ? "In progress \u2014 tap to resume at Q" + (savedFq.currentIndex + 1) + " of " + savedFq.questions.length
-      : "50 questions \u00B7 all 15 systems";
+    if (!savedFq) {
+      fqCountEl.textContent = "50 questions \u00B7 all 15 systems";
+    } else if (savedFq.phase === "results") {
+      fqCountEl.textContent = "Completed \u2014 tap to view your results";
+    } else if (savedFq.phase === "review") {
+      fqCountEl.textContent = "Reviewing missed questions \u2014 tap to resume";
+    } else {
+      fqCountEl.textContent = "In progress \u2014 tap to resume at Q" + (savedFq.currentIndex + 1) + " of " + savedFq.questions.length;
+    }
   }
 
   const grid = document.getElementById("system-grid");
@@ -3128,35 +3202,43 @@ function shuffleArray(arr) {
 }
 
 // Tile drill resumes where you left off (same idea as Sequential Review's
-// resume, scoped to one system) rather than always restarting at Q1.
-//
-// Shuffle-on-completion temporarily DISABLED (per Mark, so Q# stays
-// predictable/matches the bank order while we're cross-referencing specific
-// questions by number) — normally, once every question in the bank has been
-// resolved via tile drilling, there's nothing left to resume to and drilling
-// the tile again would shuffle question order + answer options for genuine
-// random review (see beginSystemQuizShuffled, still intact below, just
-// unreachable from here for now). Re-enable by restoring the
-// beginSystemQuizShuffled(sysId) branch when ready.
+// resume, scoped to one system) rather than always restarting at Q1 — and,
+// with shuffle always on, "where you left off" means a position in this
+// system's saved, frozen-for-this-pass shuffled order (see buildTilePass),
+// not a position in the raw question bank. A pass with nothing answered
+// yet, or none saved at all, or one that's already fully resolved, all
+// fall through to beginSystemQuizAt(sysId, 0) — which itself is what
+// decides whether to reuse the existing order or shuffle a fresh one (see
+// its own comment below). A fully-resolved pass getting a fresh shuffle
+// here — rather than a resume prompt — is deliberate: once every question
+// in the bank has been answered, there's nothing left to resume to, so
+// drilling the tile again should just start another random review lap.
 function startSystemQuiz(sysId) {
   const sys = SYSTEMS.find(s => s.id === sysId);
   if (!sys || !sys.live) return;
 
-  const bank = QUESTIONS[sysId] || [];
-  const resumeIndex = getSystemTileDrillResumeIndex(sysId);
-
-  if (resumeIndex <= 0 || resumeIndex >= bank.length) {
-    beginSystemQuizAt(sysId, 0);
+  const saved = loadTilePass(sysId);
+  if (saved && saved.currentIndex > 0 && saved.currentIndex < saved.questions.length) {
+    showResumePrompt(saved.currentIndex, false, "system", sysId);
   } else {
-    showResumePrompt(resumeIndex, false, "system", sysId);
+    beginSystemQuizAt(sysId, 0);
   }
 }
 
+// index === 0 always means "begin a pass from its start," which is also
+// exactly when a fresh shuffle is wanted — a brand-new tile tap, an
+// explicit Start Over, or relaunching a fully-resolved bank for another
+// random round — so it always regenerates. Any other index only ever
+// comes from the resume prompt's "Continue" button, which must reuse the
+// exact saved order rather than reshuffle it (loadTilePass falls back to
+// building fresh only as a safety net, e.g. if storage was cleared
+// mid-session).
 function beginSystemQuizAt(sysId, index) {
   const sys = SYSTEMS.find(s => s.id === sysId);
   currentSystem = sysId;
   quizMode = "system";
-  currentQuiz = (QUESTIONS[sysId] || []).map(q => Object.assign({}, q, { _sys: sysId }));
+  const pass = (index === 0) ? buildTilePass(sysId) : (loadTilePass(sysId) || buildTilePass(sysId));
+  currentQuiz = pass.questions;
   currentIndex = index;
   answers = [];
   const titleEl = document.getElementById("quiz-title");
@@ -3166,32 +3248,10 @@ function beginSystemQuizAt(sysId, index) {
   renderQuestion();
 }
 
-function beginSystemQuizShuffled(sysId) {
-  const sys = SYSTEMS.find(s => s.id === sysId);
-  currentSystem = sysId;
-  quizMode = "system";
-
-  let questions = JSON.parse(JSON.stringify(QUESTIONS[sysId] || []));
-  questions = shuffleArray(questions).map(q => {
-    const indices = shuffleArray([0, 1, 2, 3]);
-    const newOptions = indices.map(i => q.options[i]);
-    const newCorrect = indices.indexOf(q.correct);
-    return Object.assign({}, q, { options: newOptions, correct: newCorrect, _sys: sysId });
-  });
-
-  currentQuiz = questions;
-  currentIndex = 0; answers = [];
-  const titleEl = document.getElementById("quiz-title");
-  titleEl.classList.remove("with-system");
-  titleEl.textContent = sys.name + " — Shuffled Review";
-  showScreen("quiz-screen");
-  renderQuestion();
-}
-
 function startFullQuiz() {
   const saved = loadFullQuizState();
-  if (saved && saved.currentIndex < saved.questions.length) {
-    showResumePrompt(saved.currentIndex, false, "full");
+  if (saved) {
+    showResumePrompt(0, false, "full");
   } else {
     beginFullQuizFresh();
   }
@@ -3203,7 +3263,7 @@ function beginFullQuizFresh() {
   currentSystem = "";
   currentQuiz = generateFullQuizSet();
   currentIndex = 0; answers = [];
-  saveFullQuizState({ questions: currentQuiz, currentIndex: 0, answers: [] });
+  saveFullQuizState({ questions: currentQuiz, currentIndex: 0, answers: [], phase: "quiz", missedList: null, reviewIndex: null });
   document.getElementById("quiz-title").textContent = "50-Question Test";
   showScreen("quiz-screen");
   renderQuestion();
@@ -3219,14 +3279,37 @@ function resumeFullQuizAt(saved) {
   renderQuestion();
 }
 
+// The completed-test counterparts of resumeFullQuizAt — restore the in-
+// memory state a results/review render depends on, then paint the right
+// screen, without touching storage or recomputing anything that's already
+// frozen in the saved state.
+function resumeFullQuizResults(saved) {
+  quizMode = "full";
+  currentSystem = "";
+  currentQuiz = saved.questions;
+  answers = saved.answers;
+  fullQuizMissedList = saved.missedList || answers.filter(a => !a.isCorrect);
+  renderFullQuizResults();
+}
+function resumeFullQuizReview(saved) {
+  quizMode = "full";
+  currentSystem = "";
+  currentQuiz = saved.questions;
+  answers = saved.answers;
+  fullQuizMissedList = saved.missedList || answers.filter(a => !a.isCorrect);
+  fullQuizReviewIndex = Math.min(saved.reviewIndex || 0, Math.max(fullQuizMissedList.length - 1, 0));
+  showScreen("review-missed-screen");
+  renderReviewQuestion();
+}
+
 function startSequential() {
-  const resumeIndex = getSequentialResumeIndex();
-  if (resumeIndex >= SEQUENTIAL_QUESTIONS.length) {
-    showResumePrompt(resumeIndex, true);
-  } else if (resumeIndex <= 0) {
-    beginSequentialAt(0);
+  const saved = loadSequentialPass();
+  if (saved && saved.currentIndex >= saved.questions.length) {
+    showResumePrompt(0, true);
+  } else if (saved && saved.currentIndex > 0) {
+    showResumePrompt(saved.currentIndex, false);
   } else {
-    showResumePrompt(resumeIndex, false);
+    beginSequentialAt(0);
   }
 }
 
@@ -3267,22 +3350,50 @@ function showResumePrompt(resumeIndex, isComplete, mode, sysId) {
 
   if (mode === "full") {
     // Full Quiz is always resumable-or-fresh — there is no "complete, start
-    // over?" case here the way Sequential Review has, because a completed
-    // Full Quiz attempt clears its own saved state right after scoring
-    // (see showResults()). If this prompt is showing for "full" mode at
-    // all, there's a genuine in-progress attempt.
+    // over?" case here the way Sequential Review has, because a fresh
+    // 50-question set is only ever generated when nothing is in progress
+    // (see beginFullQuizFresh/clearFullQuizState). A "genuine attempt in
+    // progress" now covers three phases, not just mid-quiz: still
+    // answering questions, sitting on just-finished results, or partway
+    // through reviewing missed questions — closing the app in any of the
+    // three brings you back to exactly that phase.
     const saved = loadFullQuizState();
-    const total = saved ? saved.questions.length : 50;
+    const phase = saved ? (saved.phase || "quiz") : "quiz";
     titleEl.textContent = "Welcome back!";
-    bodyEl.textContent = "You left off at Question " + (resumeIndex + 1) + " of " + total + " in your 50-Question Test.";
-    continueBtn.style.display = "block";
-    continueBtn.textContent = "Resume at Q" + (resumeIndex + 1);
-    restartBtn.textContent = "Start Over";
 
-    continueBtn.onclick = () => {
-      document.getElementById("resume-prompt").style.display = "none";
-      resumeFullQuizAt(saved);
-    };
+    if (phase === "results") {
+      const correct = saved.answers.filter(a => a.isCorrect).length;
+      const total = saved.answers.length;
+      bodyEl.textContent = "You completed a 50-Question Test (" + correct + " of " + total + " correct) and haven't left the results yet.";
+      continueBtn.style.display = "block";
+      continueBtn.textContent = "View Results";
+      restartBtn.textContent = "Start New Test";
+      continueBtn.onclick = () => {
+        document.getElementById("resume-prompt").style.display = "none";
+        resumeFullQuizResults(saved);
+      };
+    } else if (phase === "review") {
+      const missedTotal = saved.missedList ? saved.missedList.length : 0;
+      bodyEl.textContent = "You were reviewing missed question " + ((saved.reviewIndex || 0) + 1) + " of " + missedTotal + " from your last 50-Question Test.";
+      continueBtn.style.display = "block";
+      continueBtn.textContent = "Resume Review";
+      restartBtn.textContent = "Start New Test";
+      continueBtn.onclick = () => {
+        document.getElementById("resume-prompt").style.display = "none";
+        resumeFullQuizReview(saved);
+      };
+    } else {
+      const total = saved.questions.length;
+      bodyEl.textContent = "You left off at Question " + (saved.currentIndex + 1) + " of " + total + " in your 50-Question Test.";
+      continueBtn.style.display = "block";
+      continueBtn.textContent = "Resume at Q" + (saved.currentIndex + 1);
+      restartBtn.textContent = "Start Over";
+      continueBtn.onclick = () => {
+        document.getElementById("resume-prompt").style.display = "none";
+        resumeFullQuizAt(saved);
+      };
+    }
+
     restartBtn.onclick = () => {
       document.getElementById("resume-prompt").style.display = "none";
       beginFullQuizFresh();
@@ -3311,16 +3422,26 @@ function showResumePrompt(resumeIndex, isComplete, mode, sysId) {
   };
   restartBtn.onclick = () => {
     document.getElementById("resume-prompt").style.display = "none";
+    resetSequentialProgressFlags();
     beginSequentialAt(0);
   };
 
   document.getElementById("resume-prompt").style.display = "flex";
 }
 
+// index === 0 always means "begin a pass from its start" — a fresh first
+// visit, or Start Over — so it always shuffles a new pass (and, via the
+// restart button above, only ever runs after resolvedInSequential has
+// just been reset, so a new pass's resume tracking starts from a clean
+// slate). Any other index only ever comes from the resume prompt's
+// "Continue" button and must reuse the exact saved order rather than
+// reshuffle it (loadSequentialPass falls back to building fresh only as a
+// safety net).
 function beginSequentialAt(index) {
+  const pass = (index === 0) ? buildSequentialPass() : (loadSequentialPass() || buildSequentialPass());
   quizMode = "sequential";
   currentSystem = "";
-  currentQuiz = SEQUENTIAL_QUESTIONS;
+  currentQuiz = pass.questions;
   currentIndex = index;
   answers = [];
   document.getElementById("quiz-title").textContent = "Sequential Review";
@@ -3440,6 +3561,55 @@ function renderQuestion() {
     }
   }
 
+  fitQuestionCard();
+
+  // Resume support: if this question already has a saved 1st/2nd-wrong
+  // attempt from before an interruption, repaint that state now — after
+  // the layout/synoptic reset above, so it isn't immediately wiped out —
+  // instead of presenting the question as if it were untouched.
+  if (quizMode === "sequential" || quizMode === "system") {
+    const activePass = quizMode === "sequential" ? loadSequentialPass() : loadTilePass(currentSystem);
+    if (activePass && activePass.inProgress && activePass.inProgress.qid === q.id) {
+      restoreInProgressAttempt(q, activePass.inProgress);
+    }
+  }
+}
+
+// Re-paints the visual "already wrong N times" state for a question we're
+// resuming into — same feedback text/synoptic-reveal rules selectAnswer()
+// uses live, replayed without recording a new attempt. Only ever called
+// from renderQuestion() when a saved in-progress attempt matches the
+// question being rendered.
+function restoreInProgressAttempt(q, saved) {
+  attemptCount = saved.attemptCount;
+  wrongThisQuestion = saved.wrong.slice();
+
+  const btns = document.querySelectorAll("#options-container .option-btn");
+  wrongThisQuestion.forEach(i => {
+    if (btns[i]) { btns[i].classList.add("wrong", "eliminated"); btns[i].disabled = true; }
+  });
+
+  const hasSynoptic = !!q.synoptic;
+  const hasRevealPhoto = !!q.revealPhoto;
+  const fb = document.getElementById("feedback-box");
+  fb.style.display = "block";
+  fb.className = "feedback-box wrong";
+
+  if (attemptCount === 2) {
+    if (hasSynoptic) {
+      showSynoptic(q);
+      fb.textContent = "\u2717 Not quite. Take a look at the synoptic and see if that helps.";
+    } else if (hasRevealPhoto) {
+      showRevealPhoto(q);
+      fb.textContent = "\u2717 Not quite. Take a look at the image below and see if that helps.";
+    } else {
+      fb.textContent = "\u2717 Not quite. Try again.";
+    }
+  } else {
+    fb.textContent = "\u2717 Incorrect. Try again.";
+  }
+
+  fitAnswerIllustration();
   fitQuestionCard();
 }
 
@@ -3901,6 +4071,24 @@ function showRevealPhoto(q) {
   box.style.display = "flex";
 }
 
+// Persists the current position (and, while a question is mid-attempt,
+// which one and how far into it) for whichever pass is active. Takes an
+// explicit index because the last question in a pass never advances via
+// nextQuestion() — Next is replaced by the results button instead — so
+// resolving the last question has to persist currentQuiz.length itself
+// (i.e. "past the end") to correctly register the pass as complete.
+// No-op for Full Quiz, which has its own save path (see nextQuestion)
+// since it has no retry loop and therefore no in-progress-attempt state
+// to track.
+function persistPassPosition(inProgress, index) {
+  const idx = (index === undefined) ? currentIndex : index;
+  if (quizMode === "sequential") {
+    saveSequentialPass({ questions: currentQuiz, currentIndex: idx, inProgress: inProgress });
+  } else if (quizMode === "system") {
+    saveTilePass(currentSystem, { questions: currentQuiz, currentIndex: idx, inProgress: inProgress });
+  }
+}
+
 function selectAnswer(chosen) {
   const q = currentQuiz[currentIndex];
   const isCorrect = chosen === q.correct;
@@ -3930,15 +4118,17 @@ function selectAnswer(chosen) {
     // Enable toggle buttons if this is a toggle question
     document.querySelectorAll(".toggle-btn").forEach(btn => { btn.disabled = false; });
     answers.push({ qId: q.id, system: q._sys || currentSystem, isCorrect: true, attempts: attemptCount });
+    const isLast = currentIndex === currentQuiz.length - 1;
     if (quizMode === "sequential") {
       recordAttempt(q.id, true);
       markResolvedInSequential(q.id);
+      persistPassPosition(null, isLast ? currentQuiz.length : currentIndex);
     } else if (quizMode === "system") {
       recordAttempt(q.id, true);
       markResolvedInTileDrill(q.id);
+      persistPassPosition(null, isLast ? currentQuiz.length : currentIndex);
     }
 
-    const isLast = currentIndex === currentQuiz.length - 1;
     document.getElementById("next-btn").style.display    = isLast ? "none"  : "block";
     document.getElementById("results-btn").style.display = isLast ? "block" : "none";
     document.getElementById("prev-btn").style.display    = currentIndex > 0 ? "block" : "none";
@@ -3965,10 +4155,10 @@ function selectAnswer(chosen) {
       fb.textContent = "\u2717 The correct answer is " + ["A","B","C","D"][q.correct] + ". " + (q.explain || "");
 
       answers.push({ qId: q.id, system: q._sys || currentSystem, isCorrect: false, attempts: attemptCount });
-      if (quizMode === "sequential") markResolvedInSequential(q.id);
-      else if (quizMode === "system") markResolvedInTileDrill(q.id);
-
       const isLast = currentIndex === currentQuiz.length - 1;
+      if (quizMode === "sequential") { markResolvedInSequential(q.id); persistPassPosition(null, isLast ? currentQuiz.length : currentIndex); }
+      else if (quizMode === "system") { markResolvedInTileDrill(q.id); persistPassPosition(null, isLast ? currentQuiz.length : currentIndex); }
+
       document.getElementById("next-btn").style.display    = isLast ? "none"  : "block";
       document.getElementById("results-btn").style.display = isLast ? "block" : "none";
       document.getElementById("prev-btn").style.display    = currentIndex > 0 ? "block" : "none";
@@ -3986,11 +4176,13 @@ function selectAnswer(chosen) {
       } else {
         fb.textContent = "\u2717 Not quite. Try again.";
       }
+      persistPassPosition({ qid: q.id, attemptCount: attemptCount, wrong: wrongThisQuestion.slice() });
     } else {
       // FIRST WRONG — no synoptic reveal yet, leave remaining options active
       fb.style.display = "block";
       fb.className = "feedback-box wrong";
       fb.textContent = "\u2717 Incorrect. Try again.";
+      persistPassPosition({ qid: q.id, attemptCount: attemptCount, wrong: wrongThisQuestion.slice() });
     }
   }
 
@@ -4054,12 +4246,18 @@ function selectAnswerFull(chosen) {
 }
 
 function prevQuestion() {
-  if (currentIndex > 0) { currentIndex--; renderQuestion(); }
+  if (currentIndex > 0) {
+    currentIndex--;
+    persistPassPosition(null);
+    renderQuestion();
+  }
 }
 function nextQuestion() {
   currentIndex++;
   if (quizMode === "full") {
-    saveFullQuizState({ questions: currentQuiz, currentIndex: currentIndex, answers: answers });
+    saveFullQuizState({ questions: currentQuiz, currentIndex: currentIndex, answers: answers, phase: "quiz", missedList: null, reviewIndex: null });
+  } else {
+    persistPassPosition(null);
   }
   renderQuestion();
 }
@@ -4134,15 +4332,28 @@ function showResults() {
 
 // Full Quiz results: score/pass-fail banner (locked the moment this runs —
 // nothing in the Review screen afterward changes it) plus a per-system
-// breakdown. Clears the in-progress saved state now that the attempt is
-// complete, per Mark's rule that a new 50-question set is only generated
-// when the tile is tapped with nothing in progress.
+// breakdown. The saved state is deliberately NOT cleared here — a
+// completed test sitting on its results (or under review) still counts
+// as "in progress" per Mark's rule that a new 50-question set is only
+// generated when nothing is in progress; the saved state is only ever
+// cleared by beginFullQuizFresh(), i.e. an explicit new test.
 let fullQuizMissedList = [];
 let fullQuizReviewIndex = 0;
 
 function showFullQuizResults() {
-  clearFullQuizState();
+  fullQuizMissedList = answers.filter(a => !a.isCorrect);
+  saveFullQuizState({
+    questions: currentQuiz, currentIndex: currentIndex, answers: answers,
+    phase: "results", missedList: fullQuizMissedList, reviewIndex: 0
+  });
+  renderFullQuizResults();
+}
 
+// Pure DOM paint for the results screen — no persistence, no
+// recomputation beyond what's already sitting in `answers` and
+// `fullQuizMissedList`. Shared by showFullQuizResults() (freshly scored)
+// and resumeFullQuizResults() (restored after an interruption).
+function renderFullQuizResults() {
   document.getElementById("std-results-header").style.display = "none";
   document.getElementById("sys-results-grid").style.display = "none";
   document.getElementById("std-results-actions").style.display = "none";
@@ -4184,7 +4395,6 @@ function showFullQuizResults() {
     breakdown.appendChild(row);
   });
 
-  fullQuizMissedList = answers.filter(a => !a.isCorrect);
   document.getElementById("fq-review-btn").style.display = fullQuizMissedList.length > 0 ? "block" : "none";
 
   showScreen("results-screen");
@@ -4197,6 +4407,8 @@ function showFullQuizResults() {
 // treatment as the existing 3rd-attempt reveal used elsewhere.
 function startReviewMissed() {
   fullQuizReviewIndex = 0;
+  const saved = loadFullQuizState();
+  if (saved) saveFullQuizState(Object.assign({}, saved, { phase: "review", reviewIndex: 0, missedList: fullQuizMissedList }));
   showScreen("review-missed-screen");
   renderReviewQuestion();
 }
@@ -4317,6 +4529,8 @@ function selectReviewAnswer(chosen) {
 
 function nextMissedQuestion() {
   fullQuizReviewIndex++;
+  const saved = loadFullQuizState();
+  if (saved) saveFullQuizState(Object.assign({}, saved, { phase: "review", reviewIndex: fullQuizReviewIndex }));
   renderReviewQuestion();
 }
 
@@ -4324,6 +4538,8 @@ function finishReview() {
   // No synoptic-container state to reset — getActiveSynContentId() derives
   // the answer fresh from showScreen()'s active-screen bookkeeping, so
   // switching screens here is all that's needed for correctness.
+  const saved = loadFullQuizState();
+  if (saved) saveFullQuizState(Object.assign({}, saved, { phase: "results" }));
   showScreen("results-screen");
 }
 
