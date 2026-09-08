@@ -976,22 +976,22 @@ const SYNOPTICS = {
 };
 
 const SYSTEMS = [
-  { id:"aircraft_general", name:"Aircraft General",      count:25, live:true  },
-  { id:"electrics",        name:"Electrics",             count:32, live:true  },
-  { id:"lighting",         name:"Lighting",              count:5,  live:true  },
-  { id:"apu",              name:"APU",                   count:17, live:true  },
-  { id:"avionics",         name:"PlaneView / Avionics",  count:47, live:true  },
-  { id:"engines",          name:"Engines — BR710",       count:35, live:true  },
-  { id:"fuel",             name:"Fuel",                  count:21, live:true  },
-  { id:"fire",             name:"Fire",                  count:11, live:true  },
-  { id:"hydraulics",       name:"Hydraulics",            count:18, live:true  },
-  { id:"landing_gear",     name:"Landing Gear",          count:19, live:true  },
-  { id:"flight_controls",  name:"Flight Controls",       count:25, live:true  },
-  { id:"pneumatics",       name:"Pneumatics / Air Cond / Press", count:33, live:true  },
-  { id:"anti_icing",       name:"Anti-Icing",            count:15, live:true  },
-  { id:"oxygen",           name:"Oxygen",                count:6,  live:true  },
-  { id:"performance",      name:"Performance",           count:15, live:true  },
-  { id:"functional_checks", name:"Functional Checks",    count:2,  live:true, isMenu:true },
+  { id:"aircraft_general", name:"Aircraft General",      live:true  },
+  { id:"electrics",        name:"Electrics",             live:true  },
+  { id:"lighting",         name:"Lighting",              live:true  },
+  { id:"apu",              name:"APU",                   live:true  },
+  { id:"avionics",         name:"PlaneView / Avionics",  live:true  },
+  { id:"engines",          name:"Engines — BR710",       live:true  },
+  { id:"fuel",             name:"Fuel",                  live:true  },
+  { id:"fire",             name:"Fire",                  live:true  },
+  { id:"hydraulics",       name:"Hydraulics",            live:true  },
+  { id:"landing_gear",     name:"Landing Gear",          live:true  },
+  { id:"flight_controls",  name:"Flight Controls",       live:true  },
+  { id:"pneumatics",       name:"Pneumatics / Air Cond / Press", live:true  },
+  { id:"anti_icing",       name:"Anti-Icing",            live:true  },
+  { id:"oxygen",           name:"Oxygen",                live:true  },
+  { id:"performance",      name:"Performance",           live:true  },
+  { id:"functional_checks", name:"Functional Checks",    live:true, isMenu:true },
 ];
 
 const FUNCTIONAL_CHECKS = [
@@ -3124,7 +3124,8 @@ function buildHomeScreen() {
   SYSTEMS.forEach(sys => {
     const tile = document.createElement("div");
     tile.className = "sys-tile " + (sys.live ? "live" : "soon");
-    const metaLabel = sys.isMenu ? (sys.count + " available") : (sys.count + " questions");
+    const qCount = sys.isMenu ? FUNCTIONAL_CHECKS.length : (QUESTIONS[sys.id] || []).length;
+    const metaLabel = sys.isMenu ? (qCount + " available") : (qCount + " questions");
     const completion = (sys.live && !sys.isMenu) ? getSystemTileDrillCompletion(sys.id) : null;
     if (completion && completion.resolved > 0) anyTileDrillProgress = true;
     const proficient = (sys.live && !sys.isMenu) ? isSystemProficient(sys.id) : false;
