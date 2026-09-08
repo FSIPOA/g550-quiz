@@ -2869,14 +2869,17 @@ function clearFullQuizState() {
 // pattern Full Quiz already uses for its 50-question set. A pass holds:
 // the shuffled question order for this pass only (system order itself is
 // never shuffled), the current position within it, and (for Sequential
-// Review and Tile Drill only — Full Quiz has no retry loop) whichever
-// question is mid-attempt, so 1st/2nd-wrong state survives an
-// interruption instead of resetting. Position and shuffle order are only
-// ever regenerated when a pass is started fresh, is genuinely restarted,
-// or (Tile Drill only) has been fully resolved and is being re-entered
-// for another round of random review — never on an ordinary reload, so a
-// question already seen earlier in the pass can't reappear until the
-// whole pass is done.
+// Review and Tile Drill only — Full Quiz's own answer-lock persistence
+// covers the equivalent case for it, see selectAnswerFull) whichever
+// question is currently on screen but hasn't been advanced past via
+// "Next" — whether that's a 1st/2nd-wrong attempt still in progress, or
+// one already resolved (correct or the 3rd-wrong reveal) — so either
+// state survives an interruption instead of resetting. Position and
+// shuffle order are only ever regenerated when a pass is started fresh,
+// is genuinely restarted, or (Tile Drill only) has been fully resolved
+// and is being re-entered for another round of random review — never on
+// an ordinary reload, so a question already seen earlier in the pass
+// can't reappear until the whole pass is done.
 const SEQPASS_KEY = "g550_sequential_pass_v1";
 
 function loadSequentialPass() {
@@ -2902,7 +2905,7 @@ function buildSequentialPass() {
       list.push(Object.assign({}, q, { options: newOptions, correct: newCorrect, _sys: sys.id }));
     });
   });
-  const pass = { questions: list, currentIndex: 0, inProgress: null };
+  const pass = { questions: list, currentIndex: 0, inProgress: null, answers: [] };
   saveSequentialPass(pass);
   return pass;
 }
@@ -2950,7 +2953,7 @@ function buildTilePass(sysId) {
     const newCorrect = indices.indexOf(q.correct);
     return Object.assign({}, q, { options: newOptions, correct: newCorrect, _sys: sysId });
   });
-  const pass = { questions: questions, currentIndex: 0, inProgress: null };
+  const pass = { questions: questions, currentIndex: 0, inProgress: null, answers: [] };
   saveTilePass(sysId, pass);
   return pass;
 }
@@ -3240,7 +3243,7 @@ function beginSystemQuizAt(sysId, index) {
   const pass = (index === 0) ? buildTilePass(sysId) : (loadTilePass(sysId) || buildTilePass(sysId));
   currentQuiz = pass.questions;
   currentIndex = index;
-  answers = [];
+  answers = (pass.answers || []).slice();
   const titleEl = document.getElementById("quiz-title");
   titleEl.classList.remove("with-system");
   titleEl.textContent = sys.name;
@@ -3443,7 +3446,7 @@ function beginSequentialAt(index) {
   currentSystem = "";
   currentQuiz = pass.questions;
   currentIndex = index;
-  answers = [];
+  answers = (pass.answers || []).slice();
   document.getElementById("quiz-title").textContent = "Sequential Review";
   showScreen("quiz-screen");
   renderQuestion();
@@ -3563,23 +3566,79 @@ function renderQuestion() {
 
   fitQuestionCard();
 
-  // Resume support: if this question already has a saved 1st/2nd-wrong
-  // attempt from before an interruption, repaint that state now — after
-  // the layout/synoptic reset above, so it isn't immediately wiped out —
-  // instead of presenting the question as if it were untouched.
+  // Resume support: if this question already has saved state from before
+  // an interruption — either a mid-attempt (1st/2nd wrong) or one that was
+  // already resolved but "Next" was never tapped — repaint that state now
+  // (after the layout/synoptic reset above, so it isn't immediately wiped
+  // out) instead of presenting the question as if it were untouched.
   if (quizMode === "sequential" || quizMode === "system") {
     const activePass = quizMode === "sequential" ? loadSequentialPass() : loadTilePass(currentSystem);
     if (activePass && activePass.inProgress && activePass.inProgress.qid === q.id) {
-      restoreInProgressAttempt(q, activePass.inProgress);
+      if (activePass.inProgress.resolved) {
+        restoreResolvedQuestion(q, activePass.inProgress);
+      } else {
+        restoreInProgressAttempt(q, activePass.inProgress);
+      }
     }
   }
 }
 
-// Re-paints the visual "already wrong N times" state for a question we're
-// resuming into — same feedback text/synoptic-reveal rules selectAnswer()
-// uses live, replayed without recording a new attempt. Only ever called
-// from renderQuestion() when a saved in-progress attempt matches the
-// question being rendered.
+// Re-paints a question that was already resolved (correct, or the 3rd-
+// wrong reveal) before an interruption — same visual end-state
+// selectAnswer() leaves live, including bringing back Next/Results, so
+// closing the app right after answering and before tapping "Next" can
+// never discard a locked-in answer or strand the pilot on a dead-end
+// screen. Only ever called from renderQuestion() when a saved resolved
+// attempt matches the question being rendered.
+function restoreResolvedQuestion(q, saved) {
+  attemptCount = saved.attemptCount;
+  wrongThisQuestion = saved.wrong.slice();
+
+  const btns = document.querySelectorAll("#options-container .option-btn");
+  const fb = document.getElementById("feedback-box");
+
+  if (saved.isCorrect) {
+    btns.forEach((btn, i) => {
+      btn.disabled = true;
+      if (i === q.correct) btn.classList.add("correct");
+      else if (wrongThisQuestion.includes(i)) btn.classList.add("wrong", "eliminated");
+    });
+    fb.style.display = "block";
+    fb.className = "feedback-box correct";
+    fb.textContent = (attemptCount === 1
+      ? "\u2713 Correct."
+      : "\u2713 Correct on attempt " + attemptCount + ".") + (q.note ? " " + q.note : "");
+    showSynoptic(q);
+    if (q.revealPhoto) showRevealPhoto(q);
+    document.querySelectorAll(".toggle-btn").forEach(btn => { btn.disabled = false; });
+  } else {
+    if (q.synoptic) showSynoptic(q);
+    if (q.revealPhoto) showRevealPhoto(q);
+    btns.forEach((btn, i) => {
+      btn.disabled = true;
+      if (i === q.correct) btn.classList.add("correct");
+      if (wrongThisQuestion.includes(i)) btn.classList.add("wrong", "eliminated");
+    });
+    fb.style.display = "block";
+    fb.className = "feedback-box explain";
+    fb.textContent = "\u2717 The correct answer is " + ["A","B","C","D"][q.correct] + ". " + (q.explain || "");
+  }
+
+  const isLast = currentIndex === currentQuiz.length - 1;
+  document.getElementById("next-btn").style.display    = isLast ? "none"  : "block";
+  document.getElementById("results-btn").style.display = isLast ? "block" : "none";
+  document.getElementById("prev-btn").style.display    = currentIndex > 0 ? "block" : "none";
+
+  fitAnswerIllustration();
+  fitQuestionCard();
+}
+
+// Re-paints the visual "already wrong N times, not yet resolved" state
+// for a question we're resuming into — same feedback text/synoptic-reveal
+// rules selectAnswer() uses live, replayed without recording a new
+// attempt. Only ever called from renderQuestion() when a saved
+// not-yet-resolved attempt matches the question being rendered — see
+// restoreResolvedQuestion() for the already-resolved counterpart.
 function restoreInProgressAttempt(q, saved) {
   attemptCount = saved.attemptCount;
   wrongThisQuestion = saved.wrong.slice();
@@ -4071,21 +4130,20 @@ function showRevealPhoto(q) {
   box.style.display = "flex";
 }
 
-// Persists the current position (and, while a question is mid-attempt,
-// which one and how far into it) for whichever pass is active. Takes an
-// explicit index because the last question in a pass never advances via
-// nextQuestion() — Next is replaced by the results button instead — so
-// resolving the last question has to persist currentQuiz.length itself
-// (i.e. "past the end") to correctly register the pass as complete.
-// No-op for Full Quiz, which has its own save path (see nextQuestion)
-// since it has no retry loop and therefore no in-progress-attempt state
-// to track.
+// Persists the current position (and, while a question is mid-attempt or
+// just resolved but not yet advanced past, that state) for whichever pass
+// is active. Also mirrors the live `answers` array into the saved pass —
+// needed so showResults() tallies correctly even after a pass has been
+// interrupted and resumed one or more times; without this, a resumed
+// session's `answers` would only ever reflect what was answered since the
+// most recent resume, not the whole pass. No-op for Full Quiz, which has
+// its own save path (see selectAnswerFull/nextQuestion).
 function persistPassPosition(inProgress, index) {
   const idx = (index === undefined) ? currentIndex : index;
   if (quizMode === "sequential") {
-    saveSequentialPass({ questions: currentQuiz, currentIndex: idx, inProgress: inProgress });
+    saveSequentialPass({ questions: currentQuiz, currentIndex: idx, inProgress: inProgress, answers: answers.slice() });
   } else if (quizMode === "system") {
-    saveTilePass(currentSystem, { questions: currentQuiz, currentIndex: idx, inProgress: inProgress });
+    saveTilePass(currentSystem, { questions: currentQuiz, currentIndex: idx, inProgress: inProgress, answers: answers.slice() });
   }
 }
 
@@ -4119,14 +4177,15 @@ function selectAnswer(chosen) {
     document.querySelectorAll(".toggle-btn").forEach(btn => { btn.disabled = false; });
     answers.push({ qId: q.id, system: q._sys || currentSystem, isCorrect: true, attempts: attemptCount });
     const isLast = currentIndex === currentQuiz.length - 1;
+    const resolvedState = { qid: q.id, resolved: true, isCorrect: true, attemptCount: attemptCount, wrong: wrongThisQuestion.slice() };
     if (quizMode === "sequential") {
       recordAttempt(q.id, true);
       markResolvedInSequential(q.id);
-      persistPassPosition(null, isLast ? currentQuiz.length : currentIndex);
+      persistPassPosition(resolvedState, currentIndex);
     } else if (quizMode === "system") {
       recordAttempt(q.id, true);
       markResolvedInTileDrill(q.id);
-      persistPassPosition(null, isLast ? currentQuiz.length : currentIndex);
+      persistPassPosition(resolvedState, currentIndex);
     }
 
     document.getElementById("next-btn").style.display    = isLast ? "none"  : "block";
@@ -4156,8 +4215,9 @@ function selectAnswer(chosen) {
 
       answers.push({ qId: q.id, system: q._sys || currentSystem, isCorrect: false, attempts: attemptCount });
       const isLast = currentIndex === currentQuiz.length - 1;
-      if (quizMode === "sequential") { markResolvedInSequential(q.id); persistPassPosition(null, isLast ? currentQuiz.length : currentIndex); }
-      else if (quizMode === "system") { markResolvedInTileDrill(q.id); persistPassPosition(null, isLast ? currentQuiz.length : currentIndex); }
+      const resolvedState = { qid: q.id, resolved: true, isCorrect: false, attemptCount: attemptCount, wrong: wrongThisQuestion.slice() };
+      if (quizMode === "sequential") { markResolvedInSequential(q.id); persistPassPosition(resolvedState, currentIndex); }
+      else if (quizMode === "system") { markResolvedInTileDrill(q.id); persistPassPosition(resolvedState, currentIndex); }
 
       document.getElementById("next-btn").style.display    = isLast ? "none"  : "block";
       document.getElementById("results-btn").style.display = isLast ? "block" : "none";
@@ -4231,16 +4291,23 @@ function selectAnswerFull(chosen) {
   resultsBtn.style.display = isLast ? "block" : "none";
   resultsBtn.textContent = "Test Complete \u2014 View Results \u2192";
 
-  // Deliberately NOT persisting here. saveFullQuizState only happens at
-  // question-advance (nextQuestion()) so a saved state's `answers` array
-  // and `currentIndex` always agree: currentIndex points at a genuinely
-  // unanswered question. Persisting immediately after answering (before
-  // "Next" is tapped) would let a resumed session re-answer a question
-  // whose answer was already recorded, double-counting it in the score.
-  // Worst case of this choice: closing the app between answering and
-  // tapping "Next" loses that one in-flight answer on resume — same as
-  // losing it on any pre-answer reload, and far better than corrupting
-  // the score.
+  // Full Quiz is one chance only — the moment an answer is scored, it's
+  // locked in, whether or not "Next"/"View Results" has been tapped yet.
+  // So unlike Sequential Review/Tile Drill (where resuming should hand
+  // back the just-resolved question for review), the saved position here
+  // is set one question ahead of what's still on screen: closing the app
+  // anytime after answering — even before Next — should resume on the
+  // NEXT question, never re-present one that's already scored. On the
+  // last question there is no "next question" to point at, so the saved
+  // state jumps straight to the results phase instead of an out-of-range
+  // index — matching what tapping "View Results" would do live, and
+  // reusing the same resume path showFullQuizResults() already sets up.
+  if (isLast) {
+    const missed = answers.filter(a => !a.isCorrect);
+    saveFullQuizState({ questions: currentQuiz, currentIndex: currentIndex, answers: answers, phase: "results", missedList: missed, reviewIndex: 0 });
+  } else {
+    saveFullQuizState({ questions: currentQuiz, currentIndex: currentIndex + 1, answers: answers, phase: "quiz", missedList: null, reviewIndex: null });
+  }
 
   fitQuestionCard();
 }
@@ -4264,6 +4331,15 @@ function nextQuestion() {
 
 function showResults() {
   if (quizMode === "full") { showFullQuizResults(); return; }
+
+  // The pass is only marked complete in storage here — when "See Results"
+  // is actually reached — not the moment the last question resolves.
+  // That's what makes the last question itself resumable/reviewable (see
+  // selectAnswer) up until the pilot actually chooses to leave the pass:
+  // interrupting between resolving the last question and tapping this is
+  // treated the same as interrupting on any other question, right up
+  // until this point.
+  persistPassPosition(null, currentQuiz.length);
 
   document.getElementById("std-results-header").style.display = "";
   document.getElementById("sys-results-grid").style.display = "";
@@ -4525,6 +4601,21 @@ function selectReviewAnswer(chosen) {
   const isLast = fullQuizReviewIndex === fullQuizMissedList.length - 1;
   document.getElementById("review-next-btn").style.display = isLast ? "none" : "block";
   document.getElementById("review-done-btn").style.display = isLast ? "block" : "none";
+
+  // Same one-chance-only reasoning as selectAnswerFull(): this review
+  // attempt is resolved and disabled the instant it's picked, whether or
+  // not "Next Missed Question"/"Done" has been tapped yet, so the saved
+  // position advances immediately rather than waiting for that tap. On
+  // the last missed question there's no next one to point at, so this
+  // goes straight to the results phase — same as tapping "Done" would.
+  const saved = loadFullQuizState();
+  if (saved) {
+    if (isLast) {
+      saveFullQuizState(Object.assign({}, saved, { phase: "results" }));
+    } else {
+      saveFullQuizState(Object.assign({}, saved, { phase: "review", reviewIndex: fullQuizReviewIndex + 1 }));
+    }
+  }
 }
 
 function nextMissedQuestion() {
